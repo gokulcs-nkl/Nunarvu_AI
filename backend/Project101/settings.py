@@ -273,7 +273,8 @@ if not DEBUG:
 # ---------------------------------------------------------------------------
 # Face recognition and attendance rules
 # ---------------------------------------------------------------------------
-FACE_MODEL_DIR = Path(get_env_variable('FACE_MODEL_DIR', str(BASE_DIR / 'models' / 'buffalo_l')))
+# A relative FACE_MODEL_DIR is resolved against the backend folder, not the current directory.
+FACE_MODEL_DIR = BASE_DIR / get_env_variable('FACE_MODEL_DIR', 'models/buffalo_l')
 FACE_DETECTOR_MODEL = FACE_MODEL_DIR / get_env_variable('FACE_DETECTOR_FILE', 'det_10g.onnx')
 FACE_RECOGNIZER_MODEL = FACE_MODEL_DIR / get_env_variable('FACE_RECOGNIZER_FILE', 'w600k_r50.onnx')
 
