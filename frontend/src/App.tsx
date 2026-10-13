@@ -3,6 +3,7 @@ import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom'
 import { Layout } from './components/Layout'
 import { EmptyState, Spinner } from './components/ui'
 import { useAuth } from './lib/auth'
+import { Cameras } from './pages/Cameras'
 import { Login } from './pages/Login'
 import { Overview } from './pages/Overview'
 import { PeriodSettings } from './pages/PeriodSettings'
@@ -48,6 +49,7 @@ export default function App() {
           <Route path="sessions/:id" element={<SessionDetail />} />
           <Route path="students" element={<Students />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="cameras" element={<Cameras />} />
           <Route path="setup" element={<Setup />} />
           <Route path="settings/periods" element={<PeriodSettings />} />
           <Route path="*" element={<NotFound />} />

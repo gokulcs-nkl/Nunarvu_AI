@@ -31,5 +31,9 @@ urlpatterns = [
     path('students/<int:pk>/face-enrollments/', face_views.FaceEnrollmentView.as_view(), name='v1-face-enrollments'),
     path('sessions/<int:pk>/recognize/', face_views.RecognizeView.as_view(), name='v1-recognize'),
     path('reports/attendance/', face_views.AttendanceReportView.as_view(), name='v1-attendance-report'),
+    path('cameras/<int:pk>/snapshot/', monitoring.CameraSnapshotView.as_view(), name='v1-camera-snapshot'),
+    path('cameras/<int:pk>/test/', monitoring.CameraTestView.as_view(), name='v1-camera-test'),
+    path('internal/cameras/<int:pk>/state/', monitoring.WorkerStateView.as_view(), name='v1-worker-state'),
+    path('internal/cameras/<int:pk>/frame/', monitoring.WorkerFrameView.as_view(), name='v1-worker-frame'),
     path('', include(router.urls)),
 ]

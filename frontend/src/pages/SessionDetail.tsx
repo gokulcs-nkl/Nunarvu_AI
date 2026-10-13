@@ -1,151 +1,18 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Camera, CameraOff } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 
+import { LivePanel } from '../components/LivePanel'
 import { Alert, Badge, Button, Card, EmptyState, PageHeader, Spinner } from '../components/ui'
 import { api, apiList, ApiError } from '../lib/api'
 import { useAuth } from '../lib/auth'
-import { useCamera } from '../lib/camera'
 import { STATUS_LABEL } from '../lib/types'
-import type { AttendanceRecord, AttendanceStatus, ClassSession, RecognizedFace, RecognizeResult, Student } from '../lib/types'
+import type { AttendanceRecord, AttendanceStatus, ClassSession, Student } from '../lib/types'
 import { STATUS_TONE } from './Sessions'
 
-const SCAN_INTERVAL_MS = 2000
 const errorText = (error: unknown) => (error instanceof ApiError ? error.message : 'Something went wrong.')
 const clock = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
 
 const RECORD_TONE = { pending: 'warn', present: 'ok', late: 'ok', left_early: 'warn', absent: 'danger' } as const
-// Colour is paired with a text label on every box, so it never carries meaning alone.
-const BAND_STYLE = {
-  confirmed: { border: '#17794a', label: 'Confirmed' },
-  review: { border: '#8a5a00', label: 'Needs review' },
-  unknown: { border: '#5b6676', label: 'Unrecognised' },
-} as const
-
-function LiveCapture({ sessionId, onChanged }: { sessionId: number; onChanged: () => void }) {
-  const camera = useCamera()
-  const [faces, setFaces] = useState<RecognizedFace[]>([])
-  const [frameSize, setFrameSize] = useState<[number, number]>([1, 1])
-  const [enrolled, setEnrolled] = useState<number | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const busy = useRef(false)
-  const notifyChanged = useRef(onChanged)
-  useEffect(() => {
-    notifyChanged.current = onChanged
-  }, [onChanged])
-  const { active, capture, videoRef } = camera
-
-  useEffect(() => {
-    if (!active) return
-    const timer = window.setInterval(async () => {
-      if (busy.current) return // skip a tick rather than queue frames behind a slow one
-      busy.current = true
-      try {
-        const frame = await capture()
-        const video = videoRef.current
-        if (!frame || !video) return
-        const form = new FormData()
-        form.append('image', frame, 'frame.jpg')
-        const result = await api<RecognizeResult>(`/sessions/${sessionId}/recognize/`, { method: 'POST', body: form })
-        setFrameSize([video.videoWidth, video.videoHeight])
-        setFaces(result.faces)
-        setEnrolled(result.enrolled_students)
-        setError(null)
-        if (result.changed.length > 0) notifyChanged.current()
-      } catch (caught) {
-        setError(errorText(caught))
-      } finally {
-        busy.current = false
-      }
-    }, SCAN_INTERVAL_MS)
-    return () => window.clearInterval(timer)
-  }, [active, capture, videoRef, sessionId])
-
-  const counts = { confirmed: 0, review: 0, unknown: 0 }
-  for (const face of faces) counts[face.band] += 1
-
-  return (
-    <Card
-      title="Live capture"
-      action={
-        camera.active ? (
-          <Button
-            variant="secondary"
-            onClick={() => {
-              camera.stop()
-              setFaces([])
-            }}
-          >
-            <CameraOff size={16} aria-hidden="true" />
-            Stop camera
-          </Button>
-        ) : (
-          <Button onClick={() => void camera.start()}>
-            <Camera size={16} aria-hidden="true" />
-            Start camera
-          </Button>
-        )
-      }
-    >
-      <div className="relative aspect-video overflow-hidden rounded-md bg-ink">
-        <video ref={camera.videoRef} muted playsInline className="h-full w-full object-fill" />
-        {camera.active &&
-          faces.map((face, index) => {
-            const [x1, y1, x2, y2] = face.box
-            const style = BAND_STYLE[face.band]
-            return (
-              <div
-                key={index}
-                className="absolute border-2"
-                style={{
-                  borderColor: style.border,
-                  left: `${(x1 / frameSize[0]) * 100}%`,
-                  top: `${(y1 / frameSize[1]) * 100}%`,
-                  width: `${((x2 - x1) / frameSize[0]) * 100}%`,
-                  height: `${((y2 - y1) / frameSize[1]) * 100}%`,
-                }}
-              >
-                <span
-                  className="absolute -top-6 left-0 whitespace-nowrap rounded px-1.5 py-0.5 text-xs font-medium text-white"
-                  style={{ background: style.border }}
-                >
-                  {face.student_name ? `${face.student_name} · ${style.label}` : style.label}
-                  {face.band !== 'unknown' ? ` · ${face.score.toFixed(2)}` : ''}
-                </span>
-              </div>
-            )
-          })}
-        {!camera.active && (
-          <p className="absolute inset-0 flex items-center justify-center px-4 text-center text-sm text-white/80">
-            Camera is off. Frames are analysed and discarded; no video is stored.
-          </p>
-        )}
-      </div>
-      <div className="mt-3 flex flex-wrap items-center gap-2 text-sm" aria-live="polite">
-        <Badge tone="ok">{counts.confirmed} confirmed</Badge>
-        <Badge tone="warn">{counts.review} need review</Badge>
-        <Badge>{counts.unknown} unrecognised</Badge>
-        {enrolled !== null && <span className="text-muted">{enrolled} enrolled in this class</span>}
-      </div>
-      {enrolled === 0 && (
-        <div className="mt-3">
-          <Alert tone="warn">No student in this class has an enrolled face yet, so nobody can be recognised.</Alert>
-        </div>
-      )}
-      {camera.error && (
-        <div className="mt-3">
-          <Alert>{camera.error}</Alert>
-        </div>
-      )}
-      {error && (
-        <div className="mt-3">
-          <Alert>{error}</Alert>
-        </div>
-      )}
-    </Card>
-  )
-}
 
 export function SessionDetail() {
   const { id } = useParams()
@@ -253,7 +120,7 @@ export function SessionDetail() {
       )}
 
       <div className="grid gap-5 xl:grid-cols-2">
-        {canEdit && data.status === 'active' && <LiveCapture sessionId={sessionId} onChanged={refreshRecords} />}
+        {canEdit && data.status === 'active' && <LivePanel sessionId={sessionId} onChanged={refreshRecords} />}
 
         <div className="space-y-5">
           {pending.length > 0 && (

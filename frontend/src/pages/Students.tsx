@@ -8,7 +8,8 @@ import { api, apiList, ApiError } from '../lib/api'
 import type { Page } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { useCamera } from '../lib/camera'
-import type { ClassGroup, Student } from '../lib/types'
+import { useCameraPreview } from '../lib/live'
+import type { CameraDevice, ClassGroup, Student } from '../lib/types'
 
 const TARGET_CAPTURES = 5
 const errorText = (error: unknown) => (error instanceof ApiError ? error.message : 'Something went wrong.')
@@ -140,9 +141,19 @@ function EnrollPanel({ student, onDone }: { student: Student; onDone: () => void
   const camera = useCamera()
   const [count, setCount] = useState(student.face_enrollment_count)
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['students'] })
+  // A running worker holds the webcam, so the browser usually cannot open it at the same time.
+  const cameras = useQuery({ queryKey: ['cameras'], queryFn: () => apiList<CameraDevice>('/cameras/'), refetchInterval: 5000 })
+  const online = cameras.data?.filter((item) => item.status === 'online') ?? []
+  const [source, setSource] = useState<'browser' | number | null>(null)
+  const chosen = source ?? (online.length > 0 ? online[0].id : 'browser')
+  const workerCamera = chosen === 'browser' ? null : chosen
+  const preview = useCameraPreview(workerCamera)
 
   const enroll = useMutation({
     mutationFn: async () => {
+      if (workerCamera !== null) {
+        return api<{ count: number }>(`/students/${student.id}/face-enrollments/`, { method: 'POST', body: { camera: workerCamera } })
+      }
       const frame = await camera.capture()
       if (!frame) throw new ApiError(0, 'The camera is not ready yet.')
       const form = new FormData()
@@ -180,11 +191,42 @@ function EnrollPanel({ student, onDone }: { student: Student; onDone: () => void
     >
       <div className="grid gap-4 md:grid-cols-2">
         <div>
+          {online.length > 0 && (
+            <div className="mb-3">
+              <label htmlFor="enrol-source" className="mb-1 block text-xs text-muted">
+                Camera
+              </label>
+              <select
+                id="enrol-source"
+                className="h-9 w-full rounded-md border border-line bg-surface px-2 text-sm"
+                value={chosen}
+                onChange={(event) => {
+                  camera.stop()
+                  setSource(event.target.value === 'browser' ? 'browser' : Number(event.target.value))
+                }}
+              >
+                {online.map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {item.name} (running in the worker)
+                  </option>
+                ))}
+                <option value="browser">This browser's camera</option>
+              </select>
+            </div>
+          )}
           <div className="aspect-video overflow-hidden rounded-md bg-ink">
-            <video ref={camera.videoRef} muted playsInline className="h-full w-full object-cover" />
+            {workerCamera !== null ? (
+              preview && <img src={preview} alt="Live camera view" className="h-full w-full object-cover" />
+            ) : (
+              <video ref={camera.videoRef} muted playsInline className="h-full w-full object-cover" />
+            )}
           </div>
           <div className="mt-3 flex flex-wrap gap-2">
-            {!camera.active ? (
+            {workerCamera !== null ? (
+              <Button disabled={enroll.isPending} onClick={() => enroll.mutate()}>
+                {enroll.isPending ? 'Checking…' : 'Capture'}
+              </Button>
+            ) : !camera.active ? (
               <Button onClick={() => void camera.start()}>
                 <Camera size={16} aria-hidden="true" />
                 Start camera

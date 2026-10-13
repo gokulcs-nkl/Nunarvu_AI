@@ -60,6 +60,7 @@ ALLOWED_HOSTS = get_env_variable('ALLOWED_HOSTS', 'localhost,127.0.0.1').split('
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',  # must come first: gives runserver WebSocket support
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -72,6 +73,7 @@ INSTALLED_APPS = [
     'rest_framework_simplejwt',
     'rest_framework_simplejwt.token_blacklist',
     'drf_spectacular',
+    'channels',
     # Local apps
     'app1',
     'apps.accounts',
@@ -111,6 +113,11 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = 'Project101.wsgi.application'
+ASGI_APPLICATION = 'Project101.asgi.application'
+
+# Live updates travel through this layer. The in-memory layer works for a single web
+# process; several web processes need a shared layer such as Redis.
+CHANNEL_LAYERS = {'default': {'BACKEND': 'channels.layers.InMemoryChannelLayer'}}
 
 
 # Database
@@ -127,6 +134,9 @@ DATABASES = {
         'PORT': get_env_variable('DB_PORT', '5432'),
     }
 }
+if DATABASES['default']['ENGINE'].endswith('sqlite3'):
+    # The web server and the camera worker both write; wait for the other instead of failing.
+    DATABASES['default']['OPTIONS'] = {'timeout': 20}
 
 
 # Password validation
@@ -295,3 +305,16 @@ FACE_ENROLL_MAX_PER_STUDENT = int(get_env_variable('FACE_ENROLL_MAX_PER_STUDENT'
 ATTENDANCE_WINDOW_MINUTES = int(get_env_variable('ATTENDANCE_WINDOW_MINUTES', '5'))
 ATTENDANCE_CONFIRM_SIGHTINGS = int(get_env_variable('ATTENDANCE_CONFIRM_SIGHTINGS', '2'))
 ATTENDANCE_LATE_AFTER_MINUTES = int(get_env_variable('ATTENDANCE_LATE_AFTER_MINUTES', '10'))
+
+
+# ---------------------------------------------------------------------------
+# Camera worker
+# ---------------------------------------------------------------------------
+# Shared secret the worker presents when it sends live data to the web server.
+WORKER_TOKEN = get_env_variable('WORKER_TOKEN', '')
+WORKER_WEB_URL = get_env_variable('WORKER_WEB_URL', 'http://127.0.0.1:8000')
+WORKER_ANALYSIS_FPS = float(get_env_variable('WORKER_ANALYSIS_FPS', '5'))
+WORKER_PREVIEW_FPS = float(get_env_variable('WORKER_PREVIEW_FPS', '2'))
+WORKER_PREVIEW_WIDTH = int(get_env_variable('WORKER_PREVIEW_WIDTH', '960'))
+# How often a tracked face is recognised again; each confirmed recognition counts as one sighting.
+WORKER_RECOGNIZE_EVERY_SECONDS = float(get_env_variable('WORKER_RECOGNIZE_EVERY_SECONDS', '3'))

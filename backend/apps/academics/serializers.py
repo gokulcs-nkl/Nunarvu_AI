@@ -41,7 +41,7 @@ class RoomSerializer(serializers.ModelSerializer):
 
 class StudentSerializer(serializers.ModelSerializer):
     class_groups = serializers.PrimaryKeyRelatedField(many=True, queryset=ClassGroup.objects.all(), required=False)
-    face_enrollment_count = serializers.IntegerField(source='face_enrollments.count', read_only=True)
+    face_enrollment_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Student
@@ -50,6 +50,12 @@ class StudentSerializer(serializers.ModelSerializer):
             'consent_given', 'consent_recorded_at', 'class_groups', 'face_enrollment_count', 'created_at',
         ]
         read_only_fields = ['consent_recorded_at', 'created_at']
+
+    def get_face_enrollment_count(self, student) -> int:
+        """Captures usable with the face model currently configured."""
+        from vision.face.engine import configured_model_name
+
+        return student.face_enrollments.filter(model_name=configured_model_name()).count()
 
     def _stamp_consent(self, validated_data, previous=False):
         if 'consent_given' in validated_data:

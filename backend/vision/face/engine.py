@@ -28,6 +28,13 @@ class ModelNotAvailable(RuntimeError):
 
 
 @dataclass(frozen=True)
+class FaceBox:
+    box: tuple[int, int, int, int]  # x1, y1, x2, y2 in source-image pixels
+    score: float                    # detector confidence, 0-1
+    landmarks: np.ndarray           # 5x2 points
+
+
+@dataclass(frozen=True)
 class DetectedFace:
     box: tuple[int, int, int, int]  # x1, y1, x2, y2 in source-image pixels
     score: float                    # detector confidence, 0-1
@@ -146,17 +153,14 @@ class FaceEngine:
         norm = float(np.linalg.norm(vector))
         return vector / norm if norm > 0 else None
 
-    def analyze(self, image: np.ndarray) -> list[DetectedFace]:
-        """Return every detected face in a BGR image, largest first."""
+    def detect(self, image: np.ndarray) -> list[FaceBox]:
+        """Find faces in a BGR image without computing embeddings. Largest first."""
         if image is None or image.ndim != 3 or image.size == 0:
             return []
         height, width = image.shape[:2]
         boxes, scores, points = self._detect(image)
-        faces: list[DetectedFace] = []
+        found: list[FaceBox] = []
         for box, score, landmarks in zip(boxes, scores, points):
-            embedding = self._embed(image, landmarks)
-            if embedding is None:
-                continue
             x1, y1, x2, y2 = box
             clipped = (
                 int(max(0, round(x1))), int(max(0, round(y1))),
@@ -164,9 +168,29 @@ class FaceEngine:
             )
             if clipped[2] <= clipped[0] or clipped[3] <= clipped[1]:
                 continue
-            faces.append(DetectedFace(box=clipped, score=float(score), landmarks=landmarks, embedding=embedding))
-        faces.sort(key=lambda face: face.width * face.height, reverse=True)
+            found.append(FaceBox(box=clipped, score=float(score), landmarks=landmarks))
+        found.sort(key=lambda face: (face.box[2] - face.box[0]) * (face.box[3] - face.box[1]), reverse=True)
+        return found
+
+    def embed(self, image: np.ndarray, landmarks: np.ndarray) -> np.ndarray | None:
+        """Unit-length embedding for the face with these landmarks, or None if it cannot be aligned."""
+        return self._embed(image, landmarks)
+
+    def analyze(self, image: np.ndarray) -> list[DetectedFace]:
+        """Detect every face in a BGR image and embed each one. Largest first."""
+        faces: list[DetectedFace] = []
+        for found in self.detect(image):
+            embedding = self._embed(image, found.landmarks)
+            if embedding is not None:
+                faces.append(DetectedFace(box=found.box, score=found.score, landmarks=found.landmarks, embedding=embedding))
         return faces
+
+
+def configured_model_name() -> str:
+    """Name of the model pair in settings, without loading the models."""
+    from django.conf import settings
+
+    return f"{Path(settings.FACE_DETECTOR_MODEL).stem}+{Path(settings.FACE_RECOGNIZER_MODEL).stem}"
 
 
 _engine: FaceEngine | None = None

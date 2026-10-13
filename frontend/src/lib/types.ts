@@ -23,6 +23,7 @@ export interface Period {
 export interface ClassSession {
   id: number
   class_group: number
+  room: number | null
   class_group_name: string
   subject: number
   subject_code: string
@@ -85,6 +86,7 @@ export interface AttendanceRecord {
 }
 
 export interface RecognizedFace {
+  track?: number
   box: [number, number, number, number]
   band: 'confirmed' | 'review' | 'unknown'
   student: number | null
@@ -97,6 +99,39 @@ export interface RecognizeResult {
   faces: RecognizedFace[]
   enrolled_students: number
   changed: AttendanceRecord[]
+}
+
+export interface Room {
+  id: number
+  name: string
+  capacity: number | null
+}
+
+export interface CameraDevice {
+  id: number
+  name: string
+  source_type: 'webcam' | 'rtsp' | 'http' | 'file'
+  source: string
+  room: number | null
+  is_enabled: boolean
+  status: 'online' | 'offline' | 'error'
+  last_error: string
+  fps: number | null
+  latency_ms: number | null
+}
+
+/** One update from a camera worker about the session it is serving. */
+export interface LivePayload {
+  camera: number
+  camera_name: string
+  status: 'online' | 'error'
+  error: string
+  session: number | null
+  frame_size: [number, number]
+  fps: number
+  latency_ms: number
+  faces: RecognizedFace[]
+  changed: { student: number; status: AttendanceStatus; student_name: string | null }[]
 }
 
 export interface ReportRow {

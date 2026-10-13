@@ -7,7 +7,7 @@ import { Link, useNavigate } from 'react-router-dom'
 import { Alert, Badge, Button, Card, EmptyState, Input, PageHeader, Spinner } from '../components/ui'
 import { api, apiList, ApiError } from '../lib/api'
 import { useAuth } from '../lib/auth'
-import type { ClassGroup, ClassSession, Subject } from '../lib/types'
+import type { ClassGroup, ClassSession, Room, Subject } from '../lib/types'
 
 const today = () => new Date().toLocaleDateString('en-CA')
 const clock = (iso: string) => new Date(iso).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
@@ -19,14 +19,22 @@ function NewSessionForm({ onDone }: { onDone: () => void }) {
   const queryClient = useQueryClient()
   const [classGroup, setClassGroup] = useState('')
   const [subject, setSubject] = useState('')
+  const [room, setRoom] = useState('')
   const classes = useQuery({ queryKey: ['class-groups'], queryFn: () => apiList<ClassGroup>('/class-groups/') })
   const subjects = useQuery({ queryKey: ['subjects'], queryFn: () => apiList<Subject>('/subjects/') })
+  const rooms = useQuery({ queryKey: ['rooms'], queryFn: () => apiList<Room>('/rooms/') })
 
   const create = useMutation({
     mutationFn: async () => {
       const session = await api<ClassSession>('/sessions/', {
         method: 'POST',
-        body: { class_group: Number(classGroup), subject: Number(subject), date: today(), starts_at: new Date().toISOString() },
+        body: {
+          class_group: Number(classGroup),
+          subject: Number(subject),
+          room: room ? Number(room) : null,
+          date: today(),
+          starts_at: new Date().toISOString(),
+        },
       })
       return api<ClassSession>(`/sessions/${session.id}/start/`, { method: 'POST' })
     },
@@ -71,6 +79,21 @@ function NewSessionForm({ onDone }: { onDone: () => void }) {
             ))}
           </select>
         </div>
+        {rooms.data && rooms.data.length > 0 && (
+          <div className="min-w-40 flex-1">
+            <label htmlFor="session-room" className="mb-1 block text-xs text-muted">
+              Room (optional)
+            </label>
+            <select id="session-room" className={selectClass} value={room} onChange={(event) => setRoom(event.target.value)}>
+              <option value="">No room</option>
+              {rooms.data.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <Button type="submit" disabled={create.isPending}>
           {create.isPending ? 'Starting…' : 'Start session'}
         </Button>

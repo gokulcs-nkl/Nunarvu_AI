@@ -6,12 +6,13 @@ import type { FormEvent } from 'react'
 import { Alert, Button, Card, EmptyState, Input, PageHeader, Spinner } from '../components/ui'
 import { api, apiList, ApiError } from '../lib/api'
 import { useAuth } from '../lib/auth'
-import type { ClassGroup, Subject } from '../lib/types'
+import type { ClassGroup, Room, Subject } from '../lib/types'
 
 interface FieldSpec {
   name: string
   label: string
   placeholder: string
+  optional?: boolean
 }
 
 function SimpleList<T extends { id: number }>({
@@ -35,7 +36,9 @@ function SimpleList<T extends { id: number }>({
   const refresh = () => queryClient.invalidateQueries({ queryKey: [queryKey] })
 
   const create = useMutation({
-    mutationFn: () => api<T>(path, { method: 'POST', body: values }),
+    // Empty optional fields are left out so the server stores them as blank.
+    mutationFn: () =>
+      api<T>(path, { method: 'POST', body: Object.fromEntries(Object.entries(values).filter(([, value]) => value !== '')) }),
     onSuccess: () => {
       setValues({})
       return refresh()
@@ -73,7 +76,7 @@ function SimpleList<T extends { id: number }>({
                     aria-label={`Delete ${primary}`}
                     disabled={remove.isPending}
                     onClick={() => {
-                      if (window.confirm(`Delete ${primary}? Its sessions and attendance are deleted too.`)) remove.mutate(item.id)
+                      if (window.confirm(`Delete ${primary}? Anything that depends on it may be deleted too.`)) remove.mutate(item.id)
                     }}
                   >
                     <Trash2 size={16} aria-hidden="true" />
@@ -93,7 +96,7 @@ function SimpleList<T extends { id: number }>({
               </label>
               <Input
                 id={`${queryKey}-${field.name}`}
-                required
+                required={!field.optional}
                 placeholder={field.placeholder}
                 value={values[field.name] ?? ''}
                 onChange={(event) => setValues({ ...values, [field.name]: event.target.value })}
@@ -120,8 +123,8 @@ export function Setup() {
 
   return (
     <>
-      <PageHeader title="Classes and subjects" description="The class groups students belong to and the subjects taught to them." />
-      <div className="grid gap-5 lg:grid-cols-2">
+      <PageHeader title="Classes, subjects and rooms" description="The class groups students belong to, the subjects taught to them, and the rooms cameras are placed in." />
+      <div className="grid gap-5 lg:grid-cols-3">
         <SimpleList<ClassGroup>
           title="Classes"
           path="/class-groups/"
@@ -146,6 +149,17 @@ export function Setup() {
             { name: 'name', label: 'Name', placeholder: 'Mathematics' },
           ]}
           describe={(item) => ({ primary: item.code, secondary: item.name })}
+        />
+        <SimpleList<Room>
+          title="Rooms"
+          path="/rooms/"
+          queryKey="rooms"
+          editable={editable}
+          fields={[
+            { name: 'name', label: 'Room name', placeholder: 'Room 101' },
+            { name: 'capacity', label: 'Seats (optional)', placeholder: '30', optional: true },
+          ]}
+          describe={(item) => ({ primary: item.name, secondary: item.capacity ? `${item.capacity} seats` : 'Capacity not set' })}
         />
       </div>
     </>

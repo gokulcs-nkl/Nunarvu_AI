@@ -9,14 +9,13 @@ teacher-reviewed classroom observations, built with Django and React.
 |---|---|---|
 | 1 | Roles, academic data, period timings, sessions, web app shell | Done |
 | 2 | Consent-based face enrolment, attendance from the camera, teacher review, attendance report | Done |
-| 3 | Background camera worker, IP cameras, live updates | Not started |
+| 3 | Background camera worker, IP cameras, live view over WebSocket, camera management | Done |
 | 4 | Behaviour observations | Not started |
 | 5+ | Analytics, PDF export, deployment | Not started |
 
-In Phase 2 the browser's webcam supplies the frames while a session page is
-open. Recognition accuracy has not been evaluated yet; the match thresholds are
-starting values. The earlier prototype lives in `backend/app1`,
-`backend/behaviour` and `legacy_frontend` until it is replaced.
+Recognition accuracy has not been evaluated yet; the match thresholds are
+starting values. Inference currently runs on CPU. The earlier prototype lives
+in `backend/app1`, `backend/behaviour` and `legacy_frontend` until it is replaced.
 
 ## Layout
 
@@ -27,8 +26,8 @@ backend/
     accounts/        Roles, session login, audit log
     academics/       Students, classes, subjects, rooms, periods, timetable, sessions
     attendance/      Face enrolment, session attendance rules, review, report
-    monitoring/      Camera devices
-  vision/face/       Face detection and embedding (ONNX Runtime), matching
+    monitoring/      Cameras, the camera worker, live updates
+  vision/            Camera capture with reconnect; face detection, embedding, tracking, matching
   app1/, behaviour/  Earlier prototype (being replaced)
 frontend/            React + TypeScript web app (Vite, Tailwind)
 legacy_frontend/     Django templates used by the earlier prototype
@@ -63,6 +62,21 @@ python manage.py download_face_models --pack buffalo_sc  # about 15 MB, for CPU-
 
 Set `FACE_EMBEDDING_KEY` in `.env` (see `.env.example`) before enrolling anyone.
 The InsightFace pretrained models are licensed for non-commercial research use.
+
+### Camera worker
+
+Set `WORKER_TOKEN` in `.env` (see `.env.example`), then, with the backend running:
+
+```bash
+python manage.py run_camera_worker            # every enabled camera
+python manage.py run_camera_worker --camera 1 # one camera
+```
+
+The worker reads each camera, recognises faces for the active session in that
+camera's room, records attendance and feeds the live view. A camera with no
+room serves sessions with no room. If a camera drops, the worker retries with a
+growing delay and the camera shows as "Camera error" until it returns. While the
+worker holds a webcam, enrol faces from the worker's camera on the Students page.
 
 ### Frontend
 
@@ -101,7 +115,8 @@ python manage.py generate_sessions --date 2026-10-19
 
 1. Record a student's consent on the Students page, then enrol their face with
    about five captures. Photos are discarded; only an encrypted embedding is stored.
-2. Start a session and turn on the camera on the session page.
+2. Start a session. If the camera worker is running, the session page shows
+   its live view automatically; otherwise the page can use the browser's webcam.
 3. A student is marked present (or late) after two confident sightings. An
    uncertain match becomes "pending review" and never marks anyone present. An
    unrecognised face is never given a name.

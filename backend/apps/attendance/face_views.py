@@ -9,7 +9,7 @@ from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
 from rest_framework import status
 from rest_framework.exceptions import APIException, PermissionDenied, ValidationError
-from rest_framework.parsers import MultiPartParser
+from rest_framework.parsers import JSONParser, MultiPartParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
@@ -19,7 +19,7 @@ from apps.accounts.audit import record
 from apps.accounts.models import Role, get_role
 from apps.accounts.permissions import STAFF_ROLES, RolePermission
 from vision.face import matcher
-from vision.face.engine import ModelNotAvailable, get_engine
+from vision.face.engine import ModelNotAvailable, configured_model_name, get_engine
 
 from .embeddings import encrypt_embedding, gallery_for_class
 from .models import AttendanceRecord, FaceEnrollment
@@ -42,12 +42,25 @@ def _engine():
 
 
 def _read_image(request) -> np.ndarray:
+    """The uploaded image, or the latest frame of a worker-run camera when `camera` is given instead."""
     upload = request.FILES.get('image')
-    if upload is None:
+    if upload is None and request.data.get('camera'):
+        from apps.monitoring import live
+
+        try:
+            jpeg = live.latest_frame(int(request.data['camera']))
+        except (TypeError, ValueError):
+            raise ValidationError({'camera': 'Not a valid camera.'})
+        if jpeg is None:
+            raise ValidationError({'camera': 'That camera is not sending frames right now.'})
+        data = jpeg
+    elif upload is None:
         raise ValidationError({'image': 'Attach an image file in the "image" field.'})
-    if upload.size > MAX_IMAGE_BYTES:
+    elif upload.size > MAX_IMAGE_BYTES:
         raise ValidationError({'image': 'Image is larger than 8 MB.'})
-    image = cv2.imdecode(np.frombuffer(upload.read(), dtype=np.uint8), cv2.IMREAD_COLOR)
+    else:
+        data = upload.read()
+    image = cv2.imdecode(np.frombuffer(data, dtype=np.uint8), cv2.IMREAD_COLOR)
     if image is None:
         raise ValidationError({'image': 'The file is not a readable image.'})
     return image
@@ -72,11 +85,11 @@ class FaceEnrollmentView(APIView):
     permission_classes = [RolePermission]
     read_roles = STAFF_ROLES
     write_roles = STAFF_ROLES
-    parser_classes = [MultiPartParser]
+    parser_classes = [MultiPartParser, JSONParser]
 
     def get(self, request, pk):
         student = _student_for(request, pk)
-        return Response({'student': student.id, 'count': student.face_enrollments.count()})
+        return Response({'student': student.id, 'count': student.face_enrollments.filter(model_name=configured_model_name()).count()})
 
     def post(self, request, pk):
         student = _student_for(request, pk)
@@ -85,10 +98,10 @@ class FaceEnrollmentView(APIView):
                 {'detail': 'Consent has not been recorded for this student, so their face cannot be enrolled.'},
                 status=status.HTTP_409_CONFLICT,
             )
-        if student.face_enrollments.count() >= settings.FACE_ENROLL_MAX_PER_STUDENT:
-            raise ValidationError({'detail': f'This student already has {settings.FACE_ENROLL_MAX_PER_STUDENT} captures. Remove them to re-enrol.'})
-
         engine = _engine()
+        current = student.face_enrollments.filter(model_name=engine.model_name)
+        if current.count() >= settings.FACE_ENROLL_MAX_PER_STUDENT:
+            raise ValidationError({'detail': f'This student already has {settings.FACE_ENROLL_MAX_PER_STUDENT} captures. Remove them to re-enrol.'})
         faces = engine.analyze(_read_image(request))
         if not faces:
             raise ValidationError({'image': 'No face found. Face the camera in good light.'})
@@ -104,13 +117,15 @@ class FaceEnrollmentView(APIView):
             blob = encrypt_embedding(face.embedding)
         except ImproperlyConfigured as error:
             raise FaceServiceUnavailable(str(error))
+        # Captures made with a different model can never match again; do not keep them.
+        student.face_enrollments.exclude(model_name=engine.model_name).delete()
         enrollment = FaceEnrollment.objects.create(
             student=student, embedding=blob, model_name=engine.model_name,
             detection_score=face.score, created_by=request.user,
         )
         record(request, 'enroll_face', student, {'enrollment': enrollment.id})
         return Response(
-            {'id': enrollment.id, 'count': student.face_enrollments.count(), 'detection_score': round(face.score, 3)},
+            {'id': enrollment.id, 'count': current.count(), 'detection_score': round(face.score, 3)},
             status=status.HTTP_201_CREATED,
         )
 
