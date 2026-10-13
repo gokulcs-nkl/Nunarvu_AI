@@ -21,6 +21,7 @@ from apps.attendance.embeddings import gallery_for_class
 from apps.attendance.services import Sighting, record_sightings
 from vision.capture import FrameGrabber
 from vision.face import matcher
+from vision.behavior import rules
 from vision.behavior.analyzer import BehaviorAnalyzer, Person
 from vision.face.tracker import FaceTracker
 
@@ -32,6 +33,7 @@ logger = logging.getLogger(__name__)
 SESSION_REFRESH_SECONDS = 2.0
 GALLERY_REFRESH_SECONDS = 30.0
 OBSERVATION_SETTINGS_REFRESH_SECONDS = 30.0
+OBSERVATION_LOG_SECONDS = 5.0
 PHONE_BOXES_MAX_AGE = 1.5
 HEARTBEAT_SECONDS = 5.0
 CONFIG_REFRESH_SECONDS = 10.0
@@ -99,6 +101,7 @@ class CameraWorker:
         self._last_behavior = self._last_phone = 0.0
         self._phone_boxes: list = []
         self._people_count = 0
+        self._last_observation_log = 0.0
         self.publisher = publisher or NullPublisher()
         self.grabber = grabber or FrameGrabber(camera.source_type, camera.source)
         self.tracker = FaceTracker()
@@ -256,6 +259,18 @@ class CameraWorker:
                 (student for (x, y), student in identified if box[0] <= x <= box[2] and box[1] <= y <= box[3]), None,
             )
             people.append(Person(track.id, box, keypoints, confidence, student_id))
+
+        if now - self._last_observation_log >= OBSERVATION_LOG_SECONDS:
+            # Periodic record of what is being measured, for checking thresholds against a real room.
+            self._last_observation_log = now
+            hands = [m.value for m in (rules.hand_raise(p.keypoints, p.confidence) for p in people) if m is not None]
+            heads = [m.value for m in (rules.head_down(p.keypoints, p.confidence) for p in people) if m is not None]
+            logger.info(
+                'Camera %s observations: %d people, wrist above shoulder %s, nose above shoulders %s, phones %d',
+                self.camera.name, len(people),
+                f'{max(hands):.2f}' if hands else 'not measurable',
+                f'{min(heads):.2f}' if heads else 'not measurable', len(phone_boxes),
+            )
 
         updates = self.analyzer.update(people, phone_boxes, now)
         return observations.record_updates(self.session, self.camera, updates, thresholds) if updates else []

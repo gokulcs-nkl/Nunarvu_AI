@@ -39,6 +39,7 @@ class Command(BaseCommand):
                 pose = PoseEstimator(settings.BEHAVIOR_POSE_MODEL)
                 phones = PhoneDetector(settings.BEHAVIOR_OBJECT_MODEL)
                 self.stdout.write("Classroom observations: on")
+                self.stdout.flush()
             except BehaviorModelsNotAvailable as error:
                 self.stdout.write(self.style.WARNING(f"Classroom observations are off: {error}"))
 

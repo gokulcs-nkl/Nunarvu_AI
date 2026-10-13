@@ -61,6 +61,12 @@ function BrowserCapture({ sessionId, onChanged }: { sessionId: number; onChanged
 
   return (
     <>
+      <div className="mb-3">
+        <Alert tone="warn">
+          Browser camera: attendance only. Observations such as a raised hand need the camera worker; stop this camera
+          before starting the worker, because only one program can use the webcam.
+        </Alert>
+      </div>
       <FaceOverlay faces={active ? faces : []} frameSize={frameSize}>
         <video ref={videoRef} muted playsInline className="h-full w-full object-fill" />
       </FaceOverlay>
@@ -154,9 +160,13 @@ export function LivePanel({ sessionId, onChanged }: { sessionId: number; onChang
         <BrowserCapture sessionId={sessionId} onChanged={onChanged} />
       ) : (
         <div className="space-y-3 text-sm">
-          <Alert tone="warn">No camera worker is sending updates for this session.</Alert>
+          <Alert tone="warn">
+            No camera worker is running for this session. Without it, classroom observations such as a raised hand are
+            not detected.
+          </Alert>
           <p className="text-muted">
-            Start the worker on the computer that has the camera, and this view will switch to it automatically:
+            Start the worker on the computer that has the camera, and this view will switch to it automatically. Run
+            this in the backend folder, or double-click <code>start_nunarvu.bat</code> to start everything:
           </p>
           <pre className="overflow-x-auto rounded-md bg-canvas px-3 py-2 text-xs">python manage.py run_camera_worker</pre>
           <p className="text-muted">
@@ -164,7 +174,7 @@ export function LivePanel({ sessionId, onChanged }: { sessionId: number; onChang
           </p>
           <Button variant="secondary" onClick={() => setUseBrowser(true)}>
             <Camera size={16} aria-hidden="true" />
-            Use this browser's camera instead
+            Use this browser's camera for attendance only
           </Button>
         </div>
       )}
