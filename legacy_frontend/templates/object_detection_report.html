@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Anomaly Intelligence Report | CMS AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    .stat-card-anomaly {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 20px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+    }
+    .stat-card-anomaly:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.1);
+        transform: translateY(-5px);
+    }
+    .object-badge {
+        font-size: 0.75rem;
+        padding: 6px 12px;
+        border-radius: 10px;
+        font-weight: 700;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    .confidence-meter {
+        height: 6px;
+        background: rgba(255,255,255,0.05);
+        border-radius: 3px;
+        overflow: hidden;
+    }
+    .confidence-meter-fill {
+        height: 100%;
+        background: var(--primary);
+        box-shadow: 0 0 10px var(--primary);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="glass-card p-4 mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="h2 mb-1 text-white fw-bold">
+                    <i class="fas fa-microscope text-primary me-2"></i> Anomaly Intelligence Report
+                </h1>
+                <p class="text-muted mb-0">Detailed analysis of detected prohibited objects and compliance breaches</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'home' %}" class="btn btn-glass px-4 fw-bold">
+                    <i class="fas fa-home me-2"></i> Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Grid -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-3">
+            <div class="stat-card-anomaly h-100 border-primary-subtle border-top border-4">
+                <div class="text-muted smallest text-uppercase fw-bold mb-2">Total Detections</div>
+                <div class="h2 text-white fw-bold mb-0">{{ total_detections }}</div>
+            </div>
+        </div>
+        {% for summary in object_type_summary %}
+        <div class="col-md-3">
+            <div class="stat-card-anomaly h-100">
+                <div class="text-muted smallest text-uppercase fw-bold mb-2">{{ summary.object_type|title }}</div>
+                <div class="h2 text-white fw-bold mb-0">{{ summary.count }}</div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Filter Console -->
+    <div class="glass-card p-4 mb-4">
+        <form method="get" class="row g-3 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label smallest text-muted text-uppercase fw-bold">Object Class</label>
+                <select name="object_type" class="form-select btn-glass text-white border-0">
+                    <option value="">All Classes</option>
+                    {% for key, label in object_types %}
+                    <option value="{{ key }}" {% if request.GET.object_type == key %}selected{% endif %}>{{ label }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-md-3">
+                <label class="form-label smallest text-muted text-uppercase fw-bold">Temporal Range (Start)</label>
+                <input type="datetime-local" name="from_date" class="form-control btn-glass text-white border-0" value="{{ request.GET.from_date }}">
+            </div>
+            <div class="col-md-3">
+                <label class="form-label smallest text-muted text-uppercase fw-bold">Temporal Range (End)</label>
+                <input type="datetime-local" name="to_date" class="form-control btn-glass text-white border-0" value="{{ request.GET.to_date }}">
+            </div>
+            <div class="col-md-3">
+                <div class="d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1 fw-bold">
+                        <i class="fas fa-filter me-2"></i> Apply Filter
+                    </button>
+                    <a href="{% url 'object_detection_report' %}" class="btn btn-glass">
+                        <i class="fas fa-undo"></i>
+                    </a>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <!-- Intelligence Matrix -->
+    <div class="glass-card overflow-hidden">
+        <div class="table-responsive">
+            <table class="table table-dark-glass table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Identifier</th>
+                        <th>Object Class</th>
+                        <th>Detection Timestamp</th>
+                        <th>Neural Source</th>
+                        <th>Confidence Matrix</th>
+                        <th class="pe-4 text-end">Coordinates</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% if detections %}
+                        {% for detection in detections %}
+                        <tr>
+                            <td class="ps-4">
+                                <span class="text-white-50 small">#{{ detection.id }}</span>
+                            </td>
+                            <td>
+                                <span class="object-badge btn-glass text-white">
+                                    <i class="fas fa-{% if detection.object_type == 'mobile_phone' %}mobile-alt{% elif detection.object_type == 'laptop' %}laptop{% elif detection.object_type == 'tablet' %}tablet-alt{% elif detection.object_type == 'smartwatch' %}clock{% elif detection.object_type == 'headphones' %}headphones{% elif detection.object_type == 'camera' %}camera{% else %}cube{% endif %} me-2"></i>
+                                    {{ detection.get_object_type_display }}
+                                </span>
+                            </td>
+                            <td>
+                                <span class="text-white small">{{ detection.date_detected|date:"M d, Y" }}</span>
+                                <div class="text-muted smallest">{{ detection.date_detected|date:"H:i:s" }}</div>
+                            </td>
+                            <td>
+                                <span class="text-white small fw-bold"><i class="fas fa-satellite me-2 text-primary"></i>{{ detection.camera_configuration.name|default:"Primary BUS" }}</span>
+                            </td>
+                            <td>
+                                <div class="d-flex align-items-center gap-3" style="min-width: 150px;">
+                                    <div class="confidence-meter flex-grow-1">
+                                        <div class="confidence-meter-fill" style="width: {{ detection.confidence_score|multiply:100 }}%"></div>
+                                    </div>
+                                    <span class="text-primary small fw-bold">{{ detection.confidence_score|multiply:100|floatformat:0 }}%</span>
+                                </div>
+                            </td>
+                            <td class="pe-4 text-end">
+                                {% if detection.location_x and detection.location_y %}
+                                <code class="text-primary small">X:{{ detection.location_x|floatformat:1 }} Y:{{ detection.location_y|floatformat:1 }}</code>
+                                {% else %}
+                                <span class="text-muted smallest italic">No Vector Data</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr>
+                            <td colspan="6" class="text-center py-5">
+                                <div class="opacity-25 mb-3">
+                                    <i class="fas fa-shield-check fa-4x text-primary"></i>
+                                </div>
+                                <h5 class="text-white fw-bold">Zero Breaches Detected</h5>
+                                <p class="text-muted small">No prohibited objects have been registered in the current temporal window.</p>
+                            </td>
+                        </tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

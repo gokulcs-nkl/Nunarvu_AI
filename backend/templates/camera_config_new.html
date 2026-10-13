@@ -1,0 +1,392 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Sensor Configuration | CMS AI{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="glass-card p-4 mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="h2 mb-1 text-white fw-bold">
+                    <i class="fas fa-eye text-primary me-2"></i> Sensor Matrix Configuration
+                </h1>
+                <p class="text-muted mb-0">Manage neural vision endpoints and spatial recognition parameters</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <button class="btn btn-primary btn-lg fw-bold" data-bs-toggle="modal" data-bs-target="#addCameraModal">
+                    <i class="fas fa-plus-circle me-2"></i> Add New Sensor
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Alerts Container -->
+    <div id="alertContainer"></div>
+
+    <!-- Interface Tabs -->
+    <div class="glass-card p-2 mb-4">
+        <ul class="nav nav-pills nav-justified" id="cameraTab" role="tablist">
+            <li class="nav-item">
+                <button class="nav-link active fw-bold py-3" id="cameras-tab" data-bs-toggle="tab" data-bs-target="#cameras" type="button">
+                    <i class="fas fa-video me-2"></i> Active Sensors
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link fw-bold py-3" id="test-tab" data-bs-toggle="tab" data-bs-target="#test" type="button">
+                    <i class="fas fa-vial me-2"></i> Connectivity Test
+                </button>
+            </li>
+            <li class="nav-item">
+                <button class="nav-link fw-bold py-3" id="guide-tab" data-bs-toggle="tab" data-bs-target="#guide" type="button">
+                    <i class="fas fa-terminal me-2"></i> Integration Docs
+                </button>
+            </li>
+        </ul>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content" id="cameraTabContent">
+        <!-- Sensors Grid -->
+        <div class="tab-pane fade show active" id="cameras" role="tabpanel">
+            <div class="row g-4" id="camerasList">
+                <div class="col-12 text-center py-5">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="text-muted mt-3">Scanning for neural endpoints...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Connectivity Test -->
+        <div class="tab-pane fade" id="test" role="tabpanel">
+            <div class="glass-card p-5">
+                <div class="row g-5">
+                    <div class="col-lg-6">
+                        <h4 class="text-white fw-bold mb-4">Probe Neural Endpoint</h4>
+                        <div class="mb-4">
+                            <label class="form-label smallest text-muted text-uppercase fw-bold">Sensor Source</label>
+                            <input type="text" class="form-control btn-glass text-white border-0 py-3" id="testCameraSource" placeholder="0 or rtsp://...">
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label smallest text-muted text-uppercase fw-bold">Confidence Threshold</label>
+                            <input type="range" class="form-range" id="testThreshold" min="0" max="1" step="0.1" value="0.6">
+                            <div class="d-flex justify-content-between text-muted small mt-2">
+                                <span>Permissive (0.0)</span>
+                                <span class="text-primary fw-bold">Current: 0.6</span>
+                                <span>Strict (1.0)</span>
+                            </div>
+                        </div>
+                        <button class="btn btn-primary btn-lg w-100 fw-bold py-3" id="testCameraBtn">
+                            <i class="fas fa-bolt me-2"></i> Execute Connectivity Test
+                        </button>
+                        <div id="testResult" class="mt-4"></div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="btn-glass p-4 rounded-4 h-100">
+                            <h5 class="text-white fw-bold mb-3"><i class="fas fa-info-circle text-primary me-2"></i> Technical Specs</h5>
+                            <ul class="list-unstyled text-muted small">
+                                <li class="mb-3 d-flex align-items-center">
+                                    <i class="fas fa-check-circle text-success me-3"></i>
+                                    <span><strong>Local Hardware:</strong> Use index '0' for primary BUS interface.</span>
+                                </li>
+                                <li class="mb-3 d-flex align-items-center">
+                                    <i class="fas fa-check-circle text-success me-3"></i>
+                                    <span><strong>IP Protocols:</strong> RTSP/HTTP streams supported via neural bridge.</span>
+                                </li>
+                                <li class="mb-3 d-flex align-items-center">
+                                    <i class="fas fa-check-circle text-success me-3"></i>
+                                    <span><strong>Latency:</strong> Optimized for < 40ms spatial processing.</span>
+                                </li>
+                            </ul>
+                            <div class="alert bg-primary-subtle border-0 text-white-50 mt-4 small mb-0">
+                                <i class="fas fa-microchip me-2"></i> Neural engine will attempt to verify spatial coordinates and frame integrity during probe.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Documentation -->
+        <div class="tab-pane fade" id="guide" role="tabpanel">
+            <div class="glass-card p-5">
+                <div class="row g-4">
+                    <div class="col-md-4">
+                        <div class="btn-glass p-4 rounded-4 h-100">
+                            <h6 class="text-white fw-bold mb-3">USB Integration</h6>
+                            <p class="text-muted small">Primary hardware integration via local BUS. Best for direct monitoring stations.</p>
+                            <code>Source: 0 (or 1, 2)</code>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="btn-glass p-4 rounded-4 h-100">
+                            <h6 class="text-white fw-bold mb-3">IP Bridge (RTSP)</h6>
+                            <p class="text-muted small">Networked monitoring via neural stream handshake.</p>
+                            <code>rtsp://[auth]@[ip]:[port]/[path]</code>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="btn-glass p-4 rounded-4 h-100">
+                            <h6 class="text-white fw-bold mb-3">Neural Thresholds</h6>
+                            <p class="text-muted small">Calibration for InceptionResNet vector matching.</p>
+                            <span class="badge bg-primary">Recommended: 0.6</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Add/Edit Sensor Modal -->
+<div class="modal fade" id="addCameraModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content glass-card border-0 overflow-hidden">
+            <div class="modal-header border-bottom border-white-10 p-4">
+                <h5 class="modal-title text-white fw-bold"><span id="modalTitle">Register Neural Sensor</span></h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <form id="cameraForm">
+                    <div class="mb-4">
+                        <label class="form-label smallest text-muted text-uppercase fw-bold">Sensor Alias</label>
+                        <input type="text" class="form-control btn-glass text-white border-0 py-2" id="cameraName" placeholder="e.g. Science Wing - S1" required>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label smallest text-muted text-uppercase fw-bold">Connection Protocol</label>
+                        <select class="form-select btn-glass text-white border-0" id="cameraSourceType">
+                            <option value="webcam">Hardware BUS (Webcam)</option>
+                            <option value="ip_rtsp">IP Neural Bridge (RTSP)</option>
+                            <option value="ip_http">HTTP Stream Interface</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label smallest text-muted text-uppercase fw-bold">Neural Address</label>
+                        <input type="text" class="form-control btn-glass text-white border-0 py-2" id="cameraSourceInput" placeholder="0" required>
+                        <small id="sourceHint" class="text-muted smallest mt-1 d-block">BUS Index 0 for primary hardware.</small>
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label smallest text-muted text-uppercase fw-bold">Calibration Threshold</label>
+                        <input type="number" class="form-control btn-glass text-white border-0 py-2" id="cameraThreshold" value="0.6" min="0" max="1" step="0.1" required>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer border-top border-white-10 p-4">
+                <button type="button" class="btn btn-glass" data-bs-dismiss="modal">Abort</button>
+                <button type="button" class="btn btn-primary px-4 fw-bold" id="saveCameraBtn">Commit Sensor</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .nav-pills .nav-link {
+        color: rgba(255,255,255,0.6);
+        border-radius: 12px;
+        transition: all 0.3s;
+    }
+    .nav-pills .nav-link.active {
+        background: var(--primary);
+        color: white;
+        box-shadow: 0 4px 15px rgba(124, 58, 237, 0.3);
+    }
+    .camera-card {
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .camera-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .sensor-status-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        background: var(--secondary);
+        box-shadow: 0 0 10px var(--secondary);
+    }
+</style>
+
+<script>
+const API_URL = '/api/cameras/';
+let currentEditingId = null;
+
+document.getElementById('cameraSourceType').addEventListener('change', function() {
+    const hints = {
+        'webcam': 'BUS Index: 0 for default hardware interface.',
+        'ip_rtsp': 'RTSP Endpoint: rtsp://[auth]@[ip]:[port]/[stream]',
+        'ip_http': 'HTTP Endpoint: http://[ip]:[port]/stream'
+    };
+    document.getElementById('sourceHint').textContent = hints[this.value];
+    document.getElementById('cameraSourceInput').placeholder = this.value === 'webcam' ? '0' : 'Neural Address';
+});
+
+document.addEventListener('DOMContentLoaded', loadCameras);
+document.getElementById('saveCameraBtn').addEventListener('click', saveCamera);
+document.getElementById('testCameraBtn').addEventListener('click', testCamera);
+
+async function loadCameras() {
+    try {
+        const response = await fetch(API_URL, {
+            headers: { 'Authorization': `Bearer ${getToken()}` }
+        });
+        const cameras = await response.json();
+        const container = document.getElementById('camerasList');
+        
+        if (!cameras.length) {
+            container.innerHTML = `
+                <div class="col-12 py-5 text-center">
+                    <div class="btn-glass p-5 rounded-5 d-inline-block">
+                        <i class="fas fa-satellite-dish fa-4x text-primary mb-4 opacity-50"></i>
+                        <h4 class="text-white fw-bold">No Active Sensors</h4>
+                        <p class="text-muted mb-4">Initialize your neural monitoring matrix to begin tracking.</p>
+                        <button class="btn btn-primary fw-bold" data-bs-toggle="modal" data-bs-target="#addCameraModal">Initialize First Sensor</button>
+                    </div>
+                </div>
+            `;
+        } else {
+            container.innerHTML = cameras.map(cam => `
+                <div class="col-md-6 col-xl-4">
+                    <div class="glass-card p-4 camera-card h-100">
+                        <div class="d-flex justify-content-between align-items-start mb-3">
+                            <div>
+                                <h5 class="text-white fw-bold mb-1"><i class="fas fa-satellite text-primary me-2"></i> ${escapeHtml(cam.name)}</h5>
+                                <div class="text-muted smallest text-uppercase fw-bold">Address: <code class="text-primary">${escapeHtml(cam.camera_source)}</code></div>
+                            </div>
+                            <span class="badge btn-glass text-white"><span class="sensor-status-dot me-2"></span> ACTIVE</span>
+                        </div>
+                        <div class="btn-glass p-3 rounded-4 mb-4">
+                            <div class="row text-center small">
+                                <div class="col-6 border-end border-white-10">
+                                    <div class="text-muted smallest">Calibration</div>
+                                    <div class="text-white fw-bold">${cam.threshold.toFixed(2)}</div>
+                                </div>
+                                <div class="col-6">
+                                    <div class="text-muted smallest">Protocol</div>
+                                    <div class="text-white fw-bold">Neural</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button class="btn btn-glass btn-sm flex-grow-1" onclick="editCamera(${cam.id})"><i class="fas fa-sliders me-2"></i> Calibrate</button>
+                            <button class="btn btn-glass-danger btn-sm" onclick="deleteCamera(${cam.id})"><i class="fas fa-trash-alt"></i></button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+        }
+    } catch (error) { loadError(error); }
+}
+
+async function saveCamera() {
+    const name = document.getElementById('cameraName').value;
+    const source = document.getElementById('cameraSourceInput').value;
+    const threshold = parseFloat(document.getElementById('cameraThreshold').value);
+    
+    if (!name || !source) { showError('Validation Error: Neural endpoints required.'); return; }
+    
+    try {
+        const method = currentEditingId ? 'PUT' : 'POST';
+        const url = currentEditingId ? `${API_URL}${currentEditingId}/` : API_URL;
+        const response = await fetch(url, {
+            method,
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`,
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify({ name, camera_source: source, threshold })
+        });
+        
+        if (!response.ok) { showError('Matrix Sync Error: Could not commit parameters.'); return; }
+        
+        showSuccess(`Sensor matrix successfully synchronized.`);
+        bootstrap.Modal.getInstance(document.getElementById('addCameraModal')).hide();
+        loadCameras();
+        resetForm();
+    } catch (error) { showError(`System Error: ${error.message}`); }
+}
+
+async function testCamera() {
+    const source = document.getElementById('testCameraSource').value;
+    const threshold = document.getElementById('testThreshold').value;
+    if (!source) { showError('Probe Error: Valid endpoint address required.'); return; }
+    
+    const resultDiv = document.getElementById('testResult');
+    resultDiv.innerHTML = '<div class="spinner-border text-primary" role="status"></div><span class="text-muted ms-3">Executing spatial probe...</span>';
+    
+    try {
+        const response = await fetch('/api/test-camera/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${getToken()}`,
+                'X-CSRFToken': getCsrfToken()
+            },
+            body: JSON.stringify({ camera_source: source, threshold: parseFloat(threshold) })
+        });
+        const result = await response.json();
+        
+        if (result.success) {
+            resultDiv.innerHTML = `
+                <div class="btn-glass-success p-4 rounded-4">
+                    <h6 class="text-white fw-bold mb-3"><i class="fas fa-check-circle me-2"></i> Handshake Successful</h6>
+                    <div class="row g-2 smallest text-muted">
+                        <div class="col-6">Resolution: <span class="text-white fw-bold">${result.width}x${result.height}</span></div>
+                        <div class="col-6">Neural Link: <span class="text-white fw-bold">${result.fps} FPS</span></div>
+                    </div>
+                </div>`;
+        } else {
+            resultDiv.innerHTML = `
+                <div class="btn-glass-danger p-4 rounded-4">
+                    <h6 class="text-white fw-bold mb-2"><i class="fas fa-times-circle me-2"></i> Probe Failed</h6>
+                    <p class="text-white-50 smallest mb-0">Endpoint unreachable or invalid neural handshake.</p>
+                </div>`;
+        }
+    } catch (error) { showError(`Network Fault: ${error.message}`); }
+}
+
+function resetForm() {
+    document.getElementById('cameraForm').reset();
+    document.getElementById('modalTitle').textContent = 'Register Neural Sensor';
+    currentEditingId = null;
+}
+
+function showSuccess(message) {
+    const el = document.getElementById('alertContainer');
+    el.innerHTML = `<div class="alert btn-glass-success border-0 text-white mb-4 animate__animated animate__fadeIn"><i class="fas fa-check-circle me-2"></i> ${message}</div>`;
+    setTimeout(() => el.innerHTML = '', 5000);
+}
+
+function showError(message) {
+    const el = document.getElementById('alertContainer');
+    el.innerHTML = `<div class="alert btn-glass-danger border-0 text-white mb-4 animate__animated animate__shakeX"><i class="fas fa-exclamation-triangle me-2"></i> ${message}</div>`;
+}
+
+function getToken() { return localStorage.getItem('access_token') || ''; }
+function getCsrfToken() { return document.querySelector('[name=csrfmiddlewaretoken]')?.value || ''; }
+function escapeHtml(text) { const div = document.createElement('div'); div.textContent = text; return div.innerHTML; }
+async function editCamera(id) {
+    try {
+        const response = await fetch(`${API_URL}${id}/`, { headers: { 'Authorization': `Bearer ${getToken()}` } });
+        const cam = await response.json();
+        currentEditingId = id;
+        document.getElementById('modalTitle').textContent = 'Calibrate Sensor Matrix';
+        document.getElementById('cameraName').value = cam.name;
+        document.getElementById('cameraSourceInput').value = cam.camera_source;
+        document.getElementById('cameraThreshold').value = cam.threshold;
+        new bootstrap.Modal(document.getElementById('addCameraModal')).show();
+    } catch (e) { showError(e.message); }
+}
+async function deleteCamera(id) {
+    if (!confirm('Abort sensor synchronization? All spatial data will be purged.')) return;
+    try {
+        await fetch(`${API_URL}${id}/`, { method: 'DELETE', headers: { 'Authorization': `Bearer ${getToken()}` } });
+        showSuccess('Sensor matrix purged.');
+        loadCameras();
+    } catch (e) { showError(e.message); }
+}
+document.getElementById('addCameraModal').addEventListener('hidden.bs.modal', resetForm);
+</script>
+{% endblock %}

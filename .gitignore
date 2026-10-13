@@ -1,0 +1,43 @@
+# Python / Django
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# SQLite database
+*.sqlite3
+
+# Static files (generated)
+/backend/staticfiles/
+
+# Media uploads (keep folder, ignore contents)
+backend/media/students/*
+!backend/media/students/.gitkeep
+
+# ML Model (large binary — download separately)
+*.pt
+*.pth
+
+# Environments
+.env
+.venv/
+venv/
+env/
+project-env/
+
+# IDE / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Logs and temp
+*.log
+*.tmp
+
+# Misc
+*.swp
+*.swo
+
+# torch.hub download cache
+backend/hub/

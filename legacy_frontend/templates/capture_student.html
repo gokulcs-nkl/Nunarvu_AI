@@ -1,0 +1,204 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Neural Enrollment | CMS AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    .enrollment-viewport {
+        position: relative;
+        border-radius: 24px;
+        overflow: hidden;
+        aspect-ratio: 4/3;
+        background: #000;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+        margin-bottom: 2rem;
+    }
+    #video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        filter: contrast(1.1) brightness(1.1);
+    }
+    .viewport-grid {
+        position: absolute;
+        inset: 0;
+        background-image: 
+            linear-gradient(rgba(124, 58, 237, 0.1) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(124, 58, 237, 0.1) 1px, transparent 1px);
+        background-size: 30px 30px;
+        pointer-events: none;
+        z-index: 5;
+    }
+    .face-target {
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        width: 250px;
+        height: 300px;
+        border: 2px dashed var(--primary);
+        border-radius: 50% 50% 40% 40%;
+        z-index: 10;
+        opacity: 0.5;
+        box-shadow: 0 0 0 1000px rgba(0,0,0,0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="glass-card p-4 mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="h2 mb-1 text-white fw-bold">
+                    <i class="fas fa-user-plus text-primary me-2"></i> Neural Subject Enrollment
+                </h1>
+                <p class="text-muted mb-0">Initialize new identity vector in the neural database</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'home' %}" class="btn btn-glass px-4 fw-bold">
+                    <i class="fas fa-home me-2"></i> Exit
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Capture Viewport -->
+        <div class="col-lg-6">
+            <div class="glass-card p-4 h-100">
+                <div class="enrollment-viewport">
+                    <video id="video" autoplay playsinline muted></video>
+                    <div class="viewport-grid"></div>
+                    <div class="face-target"></div>
+                    
+                    <div class="position-absolute bottom-0 start-0 p-3 w-100">
+                        <div class="btn-glass p-2 rounded-3 text-center">
+                            <span class="text-white-50 smallest text-uppercase fw-bold">
+                                <i class="fas fa-video me-2"></i> Sensor Stream Active
+                            </span>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="btn-glass p-3 rounded-4">
+                    <div class="d-flex align-items-start gap-3">
+                        <i class="fas fa-info-circle text-primary fs-4 mt-1"></i>
+                        <div>
+                            <div class="text-white fw-bold small">Enrollment Protocol:</div>
+                            <ul class="text-muted smallest mb-0 mt-1">
+                                <li>Ensure subject is centered in the target vector</li>
+                                <li>Uniform lighting required for optimal sync</li>
+                                <li>Neural mapping will occur upon submission</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Enrollment Form -->
+        <div class="col-lg-6">
+            <div class="glass-card p-4 h-100">
+                <h5 class="text-white fw-bold mb-4">
+                    <i class="fas fa-file-invoice text-primary me-2"></i> Identity Data Matrix
+                </h5>
+                
+                <form id="registrationForm" method="post" enctype="multipart/form-data">
+                    {% csrf_token %}
+                    <canvas id="canvas" width="640" height="480" style="display: none;"></canvas>
+                    <input type="hidden" id="image_data" name="image_data">
+                    
+                    <div class="mb-3">
+                        <label class="form-label smallest text-muted text-uppercase fw-bold">Legal Full Name</label>
+                        <div class="input-group">
+                            <span class="input-group-text btn-glass border-0 text-primary">
+                                <i class="fas fa-user"></i>
+                            </span>
+                            <input type="text" name="name" class="form-control btn-glass text-white border-0" placeholder="e.g. Alan Turing" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label smallest text-muted text-uppercase fw-bold">Neural Link Address (Email)</label>
+                        <div class="input-group">
+                            <span class="input-group-text btn-glass border-0 text-primary">
+                                <i class="fas fa-envelope"></i>
+                            </span>
+                            <input type="email" name="email" class="form-control btn-glass text-white border-0" placeholder="alan@neural.com" required>
+                        </div>
+                    </div>
+
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-6">
+                            <label class="form-label smallest text-muted text-uppercase fw-bold">Relay Number</label>
+                            <div class="input-group">
+                                <span class="input-group-text btn-glass border-0 text-primary">
+                                    <i class="fas fa-phone"></i>
+                                </span>
+                                <input type="text" name="phone_number" class="form-control btn-glass text-white border-0" placeholder="+1..." required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label smallest text-muted text-uppercase fw-bold">Assigned Sector (Class)</label>
+                            <div class="input-group">
+                                <span class="input-group-text btn-glass border-0 text-primary">
+                                    <i class="fas fa-graduation-cap"></i>
+                                </span>
+                                <input type="text" name="student_class" class="form-control btn-glass text-white border-0" placeholder="Sector 7G" required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100 py-3 fw-bold" id="submitBtn">
+                        <i class="fas fa-fingerprint me-2"></i> Finalize Enrollment
+                    </button>
+                    
+                    <div id="capturePreview" class="mt-4 d-none">
+                        <label class="form-label smallest text-muted text-uppercase fw-bold">Captured Vector Preview</label>
+                        <img id="imagePreview" class="w-100 rounded-4 border border-primary-subtle border-2" src="" alt="Preview">
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    (function() {
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const imageDataInput = document.getElementById('image_data');
+        const registrationForm = document.getElementById('registrationForm');
+        const imagePreview = document.getElementById('imagePreview');
+        const capturePreview = document.getElementById('capturePreview');
+
+        navigator.mediaDevices.getUserMedia({ 
+            video: { width: { ideal: 640 }, height: { ideal: 480 }, facingMode: 'user' } 
+        })
+        .then(stream => {
+            video.srcObject = stream;
+            video.play();
+        })
+        .catch(err => {
+            console.error("Sensor error:", err);
+        });
+
+        registrationForm.addEventListener('submit', (event) => {
+            event.preventDefault();
+            canvas.getContext('2d').drawImage(video, 0, 0, canvas.width, canvas.height);
+            const dataURL = canvas.toDataURL('image/jpeg', 0.9);
+            imageDataInput.value = dataURL;
+
+            imagePreview.src = dataURL;
+            capturePreview.classList.remove('d-none');
+
+            registrationForm.submit();
+        });
+    })();
+</script>
+{% endblock %}

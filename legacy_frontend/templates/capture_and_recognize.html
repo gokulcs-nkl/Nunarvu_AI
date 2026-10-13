@@ -1,0 +1,348 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Neural Handshake | CMS AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    .neural-viewport {
+        position: relative;
+        border-radius: 24px;
+        overflow: hidden;
+        aspect-ratio: 16/9;
+        background: #000;
+        box-shadow: 0 20px 50px rgba(0,0,0,0.5);
+    }
+    #video {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+        filter: contrast(1.1) brightness(1.1);
+    }
+    .viewport-overlay {
+        position: absolute;
+        inset: 0;
+        border: 2px solid rgba(124, 58, 237, 0.3);
+        border-radius: 24px;
+        pointer-events: none;
+        z-index: 10;
+    }
+    .scan-line {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 4px;
+        background: linear-gradient(to bottom, transparent, var(--primary), transparent);
+        opacity: 0.5;
+        animation: scan 3s linear infinite;
+        z-index: 11;
+    }
+    @keyframes scan {
+        0% { top: 0; }
+        100% { top: 100%; }
+    }
+    .results-timeline {
+        max-height: 400px;
+        overflow-y: auto;
+        padding-right: 10px;
+    }
+    .timeline-item {
+        background: rgba(255,255,255,0.03);
+        border: 1px solid rgba(255,255,255,0.05);
+        border-radius: 16px;
+        padding: 12px 16px;
+        margin-bottom: 12px;
+        transition: all 0.3s ease;
+        animation: slideIn 0.3s ease-out;
+    }
+    @keyframes slideIn {
+        from { opacity: 0; transform: translateX(20px); }
+        to { opacity: 1; transform: translateX(0); }
+    }
+    .timeline-item:hover {
+        background: rgba(255,255,255,0.08);
+        border-color: rgba(255,255,255,0.1);
+    }
+    .status-badge {
+        font-size: 0.7rem;
+        padding: 4px 8px;
+        border-radius: 6px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .corner-decor {
+        position: absolute;
+        width: 40px;
+        height: 40px;
+        border: 4px solid var(--primary);
+        z-index: 12;
+    }
+    .top-left { top: 20px; left: 20px; border-right: 0; border-bottom: 0; }
+    .top-right { top: 20px; right: 20px; border-left: 0; border-bottom: 0; }
+    .bottom-left { bottom: 20px; left: 20px; border-right: 0; border-top: 0; }
+    .bottom-right { bottom: 20px; right: 20px; border-left: 0; border-top: 0; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="glass-card p-4 mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="h2 mb-1 text-white fw-bold">
+                    <i class="fas fa-brain text-primary me-2"></i> Neural Attendance Handshake
+                </h1>
+                <p class="text-muted mb-0">Synchronize spatial recognition data with attendance matrix</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="d-flex gap-2 justify-content-end">
+                    <button class="btn btn-primary px-4 fw-bold" id="startBtn" 
+                            {% if cam_count == 0 or authorized_count == 0 %}disabled{% endif %}>
+                        <i class="fas fa-play me-2"></i> Ignite Engine
+                    </button>
+                    <button class="btn btn-glass-danger px-4 fw-bold" id="stopBtn" style="display:none;">
+                        <i class="fas fa-stop me-2"></i> Terminate
+                    </button>
+                    <a href="{% url 'home' %}" class="btn btn-glass px-4 fw-bold">
+                        <i class="fas fa-home me-2"></i> Exit
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-8">
+            <div class="glass-card p-3">
+                <div class="neural-viewport" id="viewportContainer">
+                    <video id="video" autoplay playsinline muted></video>
+                    <canvas id="canvas" style="display:none;"></canvas>
+                    
+                    <div class="viewport-overlay">
+                        <div class="scan-line" id="scanLine" style="display:none;"></div>
+                        <div class="corner-decor top-left"></div>
+                        <div class="corner-decor top-right"></div>
+                        <div class="corner-decor bottom-left"></div>
+                        <div class="corner-decor bottom-right"></div>
+                        
+                        <div class="position-absolute bottom-0 start-0 p-4 w-100 bg-gradient-dark">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div class="d-flex align-items-center">
+                                    <span class="status-ping me-3" id="statusDot"></span>
+                                    <div>
+                                        <div class="text-white fw-bold small text-uppercase mb-0" id="statusText">System Standby</div>
+                                        <div class="text-muted smallest">Neural Link: Deactivated</div>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="text-primary fw-bold small text-uppercase">Vector Analysis</div>
+                                    <div class="text-muted smallest">Real-time Recognition: Enabled</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4">
+                    {% if cam_count == 0 %}
+                    <div class="alert btn-glass-danger border-0 text-white mb-0">
+                        <i class="fas fa-exclamation-triangle me-2"></i> <strong>Hardare Sync Error:</strong> No active sensors detected. <a href="{% url 'camera_configuration' %}" class="text-white text-decoration-underline ms-2">Initialize Sensors</a>
+                    </div>
+                    {% elif authorized_count == 0 %}
+                    <div class="alert btn-glass-warning border-0 text-white mb-0">
+                        <i class="fas fa-id-badge me-2"></i> <strong>Identity Error:</strong> No authorized vectors found. <a href="{% url 'manage-student-list' %}" class="text-white text-decoration-underline ms-2">Manage Identity Matrix</a>
+                    </div>
+                    {% else %}
+                    <div class="btn-glass p-3 rounded-4" id="readyInfo">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-info-circle text-primary me-3 fs-4"></i>
+                            <div>
+                                <span class="text-white fw-bold small">SYSTEM READY:</span>
+                                <span class="text-muted small ms-2">{{ cam_count }} sensor(s) synchronized, {{ authorized_count }} identity vectors loaded.</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="glass-card p-4 h-100">
+                <h5 class="text-white fw-bold mb-4 d-flex justify-content-between align-items-center">
+                    <span><i class="fas fa-list-ul text-primary me-2"></i> Intelligence Log</span>
+                    <span class="badge btn-glass text-muted" id="logCount">0 Events</span>
+                </h5>
+                <div class="results-timeline custom-scrollbar" id="resultsFeed">
+                    <div class="timeline-item text-center py-5 opacity-50">
+                        <i class="fas fa-satellite-dish fa-3x mb-3 text-primary"></i>
+                        <p class="text-muted small">Awaiting ignition...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    (function() {
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const startBtn = document.getElementById('startBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const resultsFeed = document.getElementById('resultsFeed');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+        const scanLine = document.getElementById('scanLine');
+        const logCount = document.getElementById('logCount');
+
+        let stream = null;
+        let scanInterval = null;
+        let isProcessing = false;
+        let eventCounter = 0;
+
+        function getCookie(name) {
+            let cookieValue = null;
+            if (document.cookie && document.cookie !== '') {
+                const cookies = document.cookie.split(';');
+                for (let i = 0; i < cookies.length; i++) {
+                    const cookie = cookies[i].trim();
+                    if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                        cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                        break;
+                    }
+                }
+            }
+            return cookieValue;
+        }
+
+        function addResult(icon, title, subtitle, cssClass) {
+            if (eventCounter === 0) resultsFeed.innerHTML = '';
+            
+            const item = document.createElement('div');
+            item.className = 'timeline-item';
+            
+            let badgeClass = 'bg-secondary';
+            if (cssClass === 'check-in') badgeClass = 'bg-success';
+            else if (cssClass === 'check-out') badgeClass = 'bg-warning';
+            else if (cssClass === 're-entry') badgeClass = 'bg-primary';
+            else if (cssClass === 'not-recognized') badgeClass = 'bg-danger';
+
+            item.innerHTML = `
+                <div class="d-flex align-items-center">
+                    <div class="btn-glass p-3 rounded-circle me-3 ${cssClass}-glow">
+                        ${icon}
+                    </div>
+                    <div class="flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <h6 class="text-white fw-bold mb-0 small">${title}</h6>
+                            <span class="status-badge ${badgeClass} smallest">${subtitle}</span>
+                        </div>
+                        <div class="text-muted smallest mt-1">${new Date().toLocaleTimeString()}</div>
+                    </div>
+                </div>
+            `;
+            resultsFeed.prepend(item);
+            eventCounter++;
+            logCount.textContent = `${eventCounter} Events`;
+            
+            while (resultsFeed.children.length > 20) {
+                resultsFeed.removeChild(resultsFeed.lastChild);
+            }
+        }
+
+        async function startCamera() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: 'user' },
+                    audio: false
+                });
+                video.srcObject = stream;
+                await video.play();
+
+                startBtn.style.display = 'none';
+                stopBtn.style.display = 'inline-flex';
+                scanLine.style.display = 'block';
+                statusDot.classList.add('status-ping-active');
+                statusText.textContent = 'NEURAL SCAN ACTIVE';
+
+                addResult('<i class="fas fa-power-off text-primary"></i>', 'Neural Engine Ignited', 'System OK', 'info');
+
+                scanInterval = setInterval(captureAndRecognize, 2000);
+            } catch (err) {
+                console.error('Camera error:', err);
+                addResult('<i class="fas fa-times-circle text-danger"></i>', 'Sensor Synchronization Failed', 'Critical', 'not-recognized');
+            }
+        }
+
+        function stopCamera() {
+            if (scanInterval) { clearInterval(scanInterval); scanInterval = null; }
+            if (stream) { stream.getTracks().forEach(track => track.stop()); stream = null; }
+            video.srcObject = null;
+            statusDot.classList.remove('status-ping-active');
+            statusText.textContent = 'SYSTEM STANDBY';
+            scanLine.style.display = 'none';
+            startBtn.style.display = 'inline-flex';
+            stopBtn.style.display = 'none';
+            addResult('<i class="fas fa-power-off text-muted"></i>', 'Neural Engine Terminated', 'Standby', 'info');
+        }
+
+        async function captureAndRecognize() {
+            if (isProcessing || !stream) return;
+            isProcessing = true;
+
+            try {
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0);
+                const imageData = canvas.toDataURL('image/jpeg', 0.85);
+
+                const response = await fetch('{% url "process_face_recognition" %}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': getCookie('csrftoken'),
+                    },
+                    body: JSON.stringify({ image: imageData })
+                });
+
+                const data = await response.json();
+
+                if (data.status === 'success' && data.results) {
+                    data.results.forEach(function(r) {
+                        let icon, cssClass;
+                        const action = r.action || '';
+                        if (action === 'Checked In') {
+                            icon = '<i class="fas fa-door-open text-success"></i>';
+                            cssClass = 'check-in';
+                        } else if (action === 'Checked Out') {
+                            icon = '<i class="fas fa-door-closed text-warning"></i>';
+                            cssClass = 'check-out';
+                        } else if (action === 'Re-Entered') {
+                            icon = '<i class="fas fa-redo text-primary"></i>';
+                            cssClass = 're-entry';
+                        } else {
+                            icon = '<i class="fas fa-user-check text-info"></i>';
+                            cssClass = 'info';
+                        }
+                        addResult(icon, r.name, action, cssClass);
+                    });
+                } else if (data.status === 'not_recognized' && data.results) {
+                    addResult('<i class="fas fa-user-secret text-danger"></i>', 'Unknown Identity', 'Access Denied', 'not-recognized');
+                }
+            } catch (err) {
+                console.error('Recognition error:', err);
+            } finally {
+                isProcessing = false;
+            }
+        }
+
+        startBtn.addEventListener('click', startCamera);
+        stopBtn.addEventListener('click', stopCamera);
+    })();
+</script>
+{% endblock %}

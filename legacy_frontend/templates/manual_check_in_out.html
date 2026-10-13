@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% load static %}
+{% load custom_filters %}
+
+{% block title %}Manual Override | CMS AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    .override-card {
+        background: rgba(255, 255, 255, 0.03);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 20px;
+        padding: 1.5rem;
+        transition: all 0.3s ease;
+        height: 100%;
+    }
+    .override-card:hover {
+        background: rgba(255, 255, 255, 0.08);
+        border-color: rgba(255, 255, 255, 0.1);
+        transform: translateY(-5px);
+    }
+    .status-badge-modern {
+        font-size: 0.7rem;
+        padding: 4px 10px;
+        border-radius: 8px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        font-weight: 700;
+    }
+    .badge-not-in { background: rgba(107, 114, 128, 0.2); color: #9ca3af; }
+    .badge-in { background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.3); }
+    .badge-out { background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.3); }
+    
+    .btn-override-in {
+        background: linear-gradient(135deg, #10b981, #059669);
+        color: white;
+        border: none;
+        box-shadow: 0 4px 15px rgba(16, 185, 129, 0.2);
+    }
+    .btn-override-out {
+        background: linear-gradient(135deg, #f59e0b, #d97706);
+        color: white;
+        border: none;
+        box-shadow: 0 4px 15px rgba(245, 158, 11, 0.2);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="glass-card p-4 mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="h2 mb-1 text-white fw-bold">
+                    <i class="fas fa-edit text-primary me-2"></i> Manual Attendance Override
+                </h1>
+                <p class="text-muted mb-0">Administrator interface for manual state synchronization</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <a href="{% url 'home' %}" class="btn btn-glass px-4 fw-bold">
+                    <i class="fas fa-home me-2"></i> Dashboard
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feedback Alerts -->
+    {% if message %}
+    <div class="alert btn-glass-{% if message_type == 'success' %}success{% elif message_type == 'warning' %}warning{% else %}danger{% endif %} border-0 text-white mb-4 d-flex align-items-center">
+        <i class="fas fa-{% if message_type == 'success' %}check-circle{% elif message_type == 'warning' %}exclamation-triangle{% else %}times-circle{% endif %} me-3 fs-4"></i>
+        <div>
+            <div class="fw-bold">System Feedback</div>
+            <div class="small opacity-75">{{ message }}</div>
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Student Matrix -->
+    <div class="row g-4">
+        {% for item in student_status %}
+        <div class="col-xl-4 col-lg-6">
+            <div class="override-card">
+                <div class="d-flex justify-content-between align-items-start mb-3">
+                    <div>
+                        <h5 class="text-white fw-bold mb-0">{{ item.student.name }}</h5>
+                        <div class="text-primary smallest fw-bold text-uppercase mt-1">
+                            <i class="fas fa-graduation-cap me-1"></i> {{ item.student.student_class }}
+                        </div>
+                    </div>
+                    {% if item.status == 'not_checked_in' %}
+                    <span class="status-badge-modern badge-not-in">
+                        <i class="fas fa-circle me-1"></i> {{ item.status_text }}
+                    </span>
+                    {% elif item.status == 'checked_in' %}
+                    <span class="status-badge-modern badge-in">
+                        <i class="fas fa-check-circle me-1"></i> {{ item.status_text }}
+                    </span>
+                    {% else %}
+                    <span class="status-badge-modern badge-out">
+                        <i class="fas fa-sign-out-alt me-1"></i> {{ item.status_text }}
+                    </span>
+                    {% endif %}
+                </div>
+
+                {% if item.last_action_time %}
+                <div class="btn-glass p-2 rounded-3 mb-4 d-flex align-items-center gap-2">
+                    <i class="fas fa-clock text-muted small"></i>
+                    <span class="text-muted smallest">Last Sync: {{ item.last_action_time|date:"g:i A" }}</span>
+                </div>
+                {% else %}
+                <div class="mb-4" style="height: 38px;"></div>
+                {% endif %}
+
+                <div class="row g-2">
+                    <div class="col-6">
+                        <form method="post" class="h-100">
+                            {% csrf_token %}
+                            <input type="hidden" name="student_id" value="{{ item.student.id }}">
+                            <input type="hidden" name="action" value="check_in">
+                            <button type="submit" class="btn w-100 h-100 fw-bold py-2 {% if item.status == 'checked_in' %}btn-glass text-muted disabled{% else %}btn-override-in{% endif %}" 
+                                    {% if item.status == 'checked_in' %}disabled{% endif %}>
+                                <i class="fas fa-sign-in-alt me-2"></i> In
+                            </button>
+                        </form>
+                    </div>
+                    <div class="col-6">
+                        <form method="post" class="h-100">
+                            {% csrf_token %}
+                            <input type="hidden" name="student_id" value="{{ item.student.id }}">
+                            <input type="hidden" name="action" value="check_out">
+                            <button type="submit" class="btn w-100 h-100 fw-bold py-2 {% if item.status != 'checked_in' %}btn-glass text-muted disabled{% else %}btn-override-out{% endif %}"
+                                    {% if item.status != 'checked_in' %}disabled{% endif %}>
+                                <i class="fas fa-sign-out-alt me-2"></i> Out
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% empty %}
+        <div class="col-12 text-center py-5">
+            <div class="glass-card p-5">
+                <i class="fas fa-users-slash fa-4x text-primary mb-4 opacity-25"></i>
+                <h4 class="text-white fw-bold">No Authorized Identity Vectors</h4>
+                <p class="text-muted">Please authorize students in the management console first.</p>
+                <a href="{% url 'manage-student-list' %}" class="btn btn-primary px-4 fw-bold mt-3">
+                    Go to Student Manager
+                </a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

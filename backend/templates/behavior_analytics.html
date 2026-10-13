@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Behavior Analytics{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+<link rel="stylesheet" href="{% static 'css/behavior_dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="analytics-page">
+    <!-- Header -->
+    <div class="glass-card mb-4 rounded-0 border-0">
+        <div class="p-4 d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 mb-1 text-white fw-bold">
+                    <i class="fas fa-chart-line text-primary me-2"></i> Intelligence Analytics
+                </h1>
+                <p class="text-muted mb-0">Comprehensive behavioral insights and performance metrics</p>
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-glass" id="downloadReportBtn">
+                    <i class="fas fa-download me-2"></i> Export Report
+                </button>
+                <button class="btn btn-glass" id="printBtn">
+                    <i class="fas fa-print"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="container-fluid mb-4">
+        <div class="glass-card p-4">
+            <div class="row g-3">
+                <div class="col-lg-2">
+                    <label class="form-label small text-muted text-uppercase fw-bold">Start Date</label>
+                    <input type="date" id="startDate" class="form-control btn-glass text-white border-0">
+                </div>
+                <div class="col-lg-2">
+                    <label class="form-label small text-muted text-uppercase fw-bold">End Date</label>
+                    <input type="date" id="endDate" class="form-control btn-glass text-white border-0">
+                </div>
+                <div class="col-lg-2">
+                    <label class="form-label small text-muted text-uppercase fw-bold">Classroom</label>
+                    <select id="classroomFilter" class="form-select btn-glass text-white border-0">
+                        <option value="">All Classrooms</option>
+                        <option value="classroom-1">Classroom 1</option>
+                        <option value="classroom-2">Classroom 2</option>
+                        <option value="classroom-3">Classroom 3</option>
+                    </select>
+                </div>
+                <div class="col-lg-2">
+                    <label class="form-label small text-muted text-uppercase fw-bold">Student</label>
+                    <select id="studentFilter" class="form-select btn-glass text-white border-0">
+                        <option value="">All Students</option>
+                    </select>
+                </div>
+                <div class="col-lg-2">
+                    <label class="form-label small text-muted text-uppercase fw-bold">Behavior Type</label>
+                    <select id="behaviorTypeFilter" class="form-select btn-glass text-white border-0">
+                        <option value="">All Behaviors</option>
+                        <option value="drowsiness">Drowsiness</option>
+                        <option value="head_pose">Head Pose</option>
+                        <option value="phone_usage">Phone Usage</option>
+                        <option value="posture">Posture</option>
+                    </select>
+                </div>
+                <div class="col-lg-2 d-flex align-items-end">
+                    <button id="applyFilters" class="btn btn-primary w-100 fw-bold">
+                        <i class="fas fa-filter me-2"></i> Apply Filters
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Key Metrics Section -->
+    <div class="container-fluid mb-4">
+        <div class="row g-3">
+            <div class="col-md-3">
+                <div class="glass-card p-4 text-center">
+                    <div class="h1 mb-1 text-primary fw-bold" id="metricAvgAttention">0%</div>
+                    <div class="text-muted small text-uppercase fw-bold">Avg Attention</div>
+                    <div class="mt-2">
+                        <span class="badge bg-success-subtle text-success">+2.5% vs last week</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="glass-card p-4 text-center border-danger-subtle">
+                    <div class="h1 mb-1 text-danger fw-bold" id="metricTotalAlerts">0</div>
+                    <div class="text-muted small text-uppercase fw-bold">Total Alerts</div>
+                    <div class="mt-2">
+                        <span class="badge bg-danger-subtle text-danger">Critical incidents</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="glass-card p-4 text-center border-warning-subtle">
+                    <div class="h1 mb-1 text-warning fw-bold" id="metricDrowsinessRate">0%</div>
+                    <div class="text-muted small text-uppercase fw-bold">Drowsiness Rate</div>
+                    <div class="mt-2">
+                        <span class="badge bg-warning-subtle text-warning">Needs attention</span>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="glass-card p-4 text-center border-orange-subtle">
+                    <div class="h1 mb-1 text-orange fw-bold" id="metricPhoneRate">0%</div>
+                    <div class="text-muted small text-uppercase fw-bold">Phone Usage</div>
+                    <div class="mt-2">
+                        <span class="badge bg-orange-subtle text-orange">Prohibited items</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Charts Section -->
+    <div class="container-fluid">
+        <!-- Row 1: Attention Trend & Alert Distribution -->
+        <div class="row g-4 mb-4">
+            <div class="col-lg-8">
+                <div class="glass-card p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="mb-0 fw-bold text-white"><i class="fas fa-chart-line text-primary me-2"></i> Attention Score Trend</h5>
+                        <div class="badge bg-primary-subtle text-primary">Live Updates</div>
+                    </div>
+                    <canvas id="attentionTrendChart" height="280"></canvas>
+                </div>
+            </div>
+            <div class="col-lg-4">
+                <div class="glass-card p-4">
+                    <div class="mb-4">
+                        <h5 class="mb-0 fw-bold text-white"><i class="fas fa-exclamation-triangle text-warning me-2"></i> Alert Distribution</h5>
+                    </div>
+                    <canvas id="alertDistributionChart" height="280"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 2: Behavior Breakdown & Time Heatmap -->
+        <div class="row g-4 mb-4">
+            <div class="col-lg-6">
+                <div class="glass-card p-4">
+                    <div class="mb-4">
+                        <h5 class="mb-0 fw-bold text-white"><i class="fas fa-list-check text-success me-2"></i> Behavior Analytics</h5>
+                    </div>
+                    <canvas id="behaviorComponentChart" height="250"></canvas>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="glass-card p-4">
+                    <div class="mb-4">
+                        <h5 class="mb-0 fw-bold text-white"><i class="fas fa-calendar-alt text-info me-2"></i> Hourly Activity Heatmap</h5>
+                    </div>
+                    <div id="heatmapContainer">
+                        <canvas id="hourlyHeatmapChart" height="250"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 3: Student Performance & Alert Timeline -->
+        <div class="row g-4 mb-4">
+            <div class="col-lg-6">
+                <div class="glass-card p-4">
+                    <div class="mb-4">
+                        <h5 class="mb-0 fw-bold text-white"><i class="fas fa-ranking-star text-primary me-2"></i> Top Issues by Student</h5>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-dark-glass mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Student</th>
+                                    <th>Primary Issue</th>
+                                    <th>Frequency</th>
+                                    <th>Severity</th>
+                                </tr>
+                            </thead>
+                            <tbody id="topIssuesList">
+                                <tr><td colspan="4" class="text-center text-muted py-4">Loading student metrics...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6">
+                <div class="glass-card p-4">
+                    <div class="mb-4">
+                        <h5 class="mb-0 fw-bold text-white"><i class="fas fa-history text-warning me-2"></i> Recent Alert Timeline</h5>
+                    </div>
+                    <div class="alert-timeline custom-scrollbar" id="alertTimeline" style="max-height: 300px; overflow-y: auto;">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Row 4: Detailed Event Log -->
+        <div class="row g-4 mb-4">
+            <div class="col-12">
+                <div class="glass-card">
+                    <div class="p-4 d-flex justify-content-between align-items-center border-bottom border-white-10">
+                        <h5 class="mb-0 fw-bold text-white"><i class="fas fa-database text-primary me-2"></i> Raw Event Intelligence</h5>
+                        <select id="eventTypeFilter" class="form-select btn-glass text-white border-0" style="width: 200px;">
+                            <option value="">All Intelligence</option>
+                            <option value="drowsiness">Drowsiness</option>
+                            <option value="head_pose">Head Pose</option>
+                            <option value="phone_usage">Phone Usage</option>
+                            <option value="posture">Posture</option>
+                        </select>
+                    </div>
+                    <div class="table-responsive">
+                        <table class="table table-dark-glass table-hover mb-0" id="eventLogTable">
+                            <thead>
+                                <tr>
+                                    <th>Timestamp</th>
+                                    <th>Student</th>
+                                    <th>Intelligence Type</th>
+                                    <th>Confidence</th>
+                                    <th>Duration</th>
+                                    <th>Details</th>
+                                </tr>
+                            </thead>
+                            <tbody id="eventLogBody">
+                                <tr><td colspan="6" class="text-center text-muted py-4">Awaiting intelligence stream...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Section -->
+        <div class="row g-4 mb-5">
+            <div class="col-12">
+                <div class="glass-card p-4">
+                    <div class="mb-4">
+                        <h5 class="mb-0 fw-bold text-white"><i class="fas fa-cloud-arrow-down text-primary me-2"></i> Data Integrity & Export</h5>
+                    </div>
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <button class="btn btn-glass-success w-100 py-3" id="exportCSV">
+                                <i class="fas fa-file-csv me-2"></i> CSV Dataset
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-glass-primary w-100 py-3" id="exportJSON">
+                                <i class="fas fa-file-code me-2"></i> JSON Object
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-glass-danger w-100 py-3" id="exportPDF">
+                                <i class="fas fa-file-pdf me-2"></i> PDF Document
+                            </button>
+                        </div>
+                        <div class="col-md-3">
+                            <button class="btn btn-glass w-100 py-3" id="shareReport">
+                                <i class="fas fa-share-nodes me-2"></i> Secure Share
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer" class="notification-container"></div>
+</div>
+
+<!-- Scripts -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script src="{% static 'js/behavior_dashboard.js' %}"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const apiBase = '{{ api_base_url|default:"/api" }}';
+        initializeAnalytics(apiBase);
+    });
+</script>
+{% endblock %}

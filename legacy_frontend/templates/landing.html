@@ -1,0 +1,218 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Classroom Monitoring AI | Neural Intelligence{% endblock %}
+
+{% block extra_css %}
+<style>
+    :root {
+        --primary: #6366f1;
+        --primary-light: #a5b4fc;
+        --secondary: #10b981;
+        --dark: #0f172a;
+        --darker: #020617;
+        --text-main: #f8fafc;
+        --text-muted: #94a3b8;
+    }
+    .hero-glow {
+        position: absolute;
+        top: 0;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 100%;
+        height: 100vh;
+        background: radial-gradient(circle at center, rgba(124, 58, 237, 0.15) 0%, transparent 70%);
+        pointer-events: none;
+        z-index: 0;
+    }
+    .floating-mesh {
+        position: fixed;
+        inset: 0;
+        background-image: 
+            radial-gradient(rgba(124, 58, 237, 0.05) 1px, transparent 1px);
+        background-size: 50px 50px;
+        z-index: -1;
+    }
+    .premium-badge {
+        background: rgba(124, 58, 237, 0.1);
+        border: 1px solid rgba(124, 58, 237, 0.3);
+        color: var(--primary);
+        padding: 6px 16px;
+        border-radius: 100px;
+        font-size: 0.8rem;
+        font-weight: 700;
+        letter-spacing: 1px;
+        text-transform: uppercase;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        margin-bottom: 2rem;
+    }
+    .hero-title {
+        font-size: clamp(3rem, 8vw, 5.5rem);
+        font-weight: 800;
+        line-height: 1;
+        letter-spacing: -0.04em;
+        margin-bottom: 2rem;
+    }
+    .gradient-text {
+        background: linear-gradient(to right, #fff, #94a3b8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .primary-gradient-text {
+        background: linear-gradient(135deg, var(--primary), #818cf8);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .capability-card {
+        background: rgba(255, 255, 255, 0.02);
+        border: 1px solid rgba(255, 255, 255, 0.05);
+        border-radius: 32px;
+        padding: 3rem;
+        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        height: 100%;
+        backdrop-filter: blur(10px);
+    }
+    .capability-card:hover {
+        background: rgba(255, 255, 255, 0.05);
+        border-color: rgba(124, 58, 237, 0.3);
+        transform: translateY(-10px);
+    }
+    .icon-box {
+        width: 64px;
+        height: 64px;
+        background: linear-gradient(135deg, rgba(124, 58, 237, 0.2), rgba(124, 58, 237, 0.05));
+        border-radius: 18px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 1.5rem;
+        border: 1px solid rgba(124, 58, 237, 0.2);
+    }
+    .glass-card {
+        background: rgba(255, 255, 255, 0.03);
+        backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, 0.08);
+        border-radius: 32px;
+    }
+    .btn-glass {
+        background: rgba(255, 255, 255, 0.05);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        color: white;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="hero-glow"></div>
+<div class="floating-mesh"></div>
+
+<!-- Hero -->
+<section class="container-fluid py-5 position-relative z-1" style="min-height: 90vh; display: flex; align-items: center;">
+    <div class="container text-center">
+        <div class="premium-badge">
+            Next-Gen Neural Monitoring
+        </div>
+        <h1 class="hero-title">
+            <span class="gradient-text">Intelligent</span><br>
+            <span class="primary-gradient-text">Classroom Neural AI</span>
+        </h1>
+        <p class="text-muted fs-4 mb-5 mx-auto" style="max-width: 800px;">
+            Seamlessly monitor, identify, and analyze classroom dynamics with state-of-the-art neural handshake protocols.
+        </p>
+        <div class="d-flex gap-3 justify-content-center">
+            <a href="{% url 'login' %}" class="btn btn-primary px-5 py-3 fw-bold rounded-4 shadow-lg">
+                Launch Dashboard <i class="fas fa-arrow-right ms-2"></i>
+            </a>
+            <a href="#capabilities" class="btn btn-glass px-5 py-3 fw-bold rounded-4">
+                Explore Core AI
+            </a>
+        </div>
+    </div>
+</section>
+
+<!-- Core Matrix -->
+<section id="capabilities" class="container py-5">
+    <div class="text-center mb-5">
+        <h2 class="h1 fw-bold text-white mb-3">Core Intelligence Matrix</h2>
+        <p class="text-muted">High-fidelity surveillance and analysis capabilities</p>
+    </div>
+    
+    <div class="row g-4">
+        <div class="col-lg-4 col-md-6">
+            <div class="capability-card">
+                <div class="icon-box">
+                    <i class="fas fa-fingerprint text-primary fs-3"></i>
+                </div>
+                <h4 class="text-white fw-bold mb-3">Neural Recognition</h4>
+                <p class="text-muted small">Biometric identity verification using multi-layered neural networks for zero-friction attendance.</p>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6">
+            <div class="capability-card">
+                <div class="icon-box">
+                    <i class="fas fa-shield-virus text-primary fs-3"></i>
+                </div>
+                <h4 class="text-white fw-bold mb-3">Anomaly Detection</h4>
+                <p class="text-muted small">Real-time identification of prohibited objects and behavior irregularities via computer vision.</p>
+            </div>
+        </div>
+        <div class="col-lg-4 col-md-6">
+            <div class="capability-card">
+                <div class="icon-box">
+                    <i class="fas fa-chart-network text-primary fs-3"></i>
+                </div>
+                <h4 class="text-white fw-bold mb-3">Stream Analytics</h4>
+                <p class="text-muted small">Instant data processing and visualization of engagement levels across all monitored sectors.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- System Status -->
+<section class="container py-5">
+    <div class="glass-card p-5 overflow-hidden position-relative">
+        <div class="row align-items-center">
+            <div class="col-lg-7">
+                <h2 class="display-5 fw-bold text-white mb-4">Unprecedented Control Over Your Learning Environment</h2>
+                <p class="text-muted mb-4 fs-5">Our AI platform provides a unified command interface for educators to maintain focus and security without manual overhead.</p>
+                
+                <div class="row g-4">
+                    <div class="col-sm-6">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="btn-glass p-2 rounded-3 text-primary">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <span class="text-white fw-bold">99.9% Sync Accuracy</span>
+                        </div>
+                    </div>
+                    <div class="col-sm-6">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="btn-glass p-2 rounded-3 text-primary">
+                                <i class="fas fa-check-circle"></i>
+                            </div>
+                            <span class="text-white fw-bold">Zero-Latency Detection</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-5 text-center d-none d-lg-block">
+                <div class="btn-glass p-4 rounded-circle d-inline-block shadow-lg border-primary">
+                    <i class="fas fa-brain fa-6x text-primary animate-pulse"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Footer -->
+<footer class="container-fluid py-5 mt-5 border-top border-white-5 border-opacity-10">
+    <div class="container text-center">
+        <div class="logo h3 mb-4">
+            <i class="fas fa-face-recognition text-primary"></i> CMS <span class="fw-light opacity-50">AI</span>
+        </div>
+        <p class="text-muted smallest text-uppercase letter-spacing-1">Neural Command Center v2.0 &copy; 2026</p>
+    </div>
+</footer>
+{% endblock %}

@@ -1,0 +1,211 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Attention Monitoring | CMS AI{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/behavior_dashboard.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="attention-list-page container-fluid py-4">
+    <!-- Header -->
+    <div class="glass-card mb-4 rounded-0 border-0">
+        <div class="p-4 d-flex justify-content-between align-items-center">
+            <div>
+                <h1 class="h3 mb-1 text-white fw-bold">
+                    <i class="fas fa-list-check text-primary me-2"></i> Intelligence Monitoring
+                </h1>
+                <p class="text-muted mb-0">Detailed focus analysis and behavioral tracking</p>
+            </div>
+            <div class="d-flex gap-2">
+                <div class="input-group" style="width: 300px;">
+                    <span class="input-group-text btn-glass border-0"><i class="fas fa-search text-muted"></i></span>
+                    <input type="text" id="searchInput" class="form-control btn-glass text-white border-0" placeholder="Search student matrix...">
+                </div>
+                <button class="btn btn-glass-success" id="exportBtn">
+                    <i class="fas fa-file-export me-2"></i> Export Data
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters Section -->
+    <div class="glass-card p-4 mb-4">
+        <div class="row g-3">
+            <div class="col-lg-2">
+                <label class="form-label smallest text-muted text-uppercase fw-bold">Sector</label>
+                <select id="classroomFilter" class="form-select btn-glass text-white border-0">
+                    <option value="">All Sectors</option>
+                    <option value="classroom-1">Engineering - A1</option>
+                    <option value="classroom-2">Business - B4</option>
+                    <option value="classroom-3">Science - S2</option>
+                </select>
+            </div>
+            <div class="col-lg-2">
+                <label class="form-label smallest text-muted text-uppercase fw-bold">Anomaly Type</label>
+                <select id="alertTypeFilter" class="form-select btn-glass text-white border-0">
+                    <option value="">All Anomalies</option>
+                    <option value="drowsiness">Drowsiness</option>
+                    <option value="phone_usage">Phone Usage</option>
+                    <option value="posture">Posture Drift</option>
+                </select>
+            </div>
+            <div class="col-lg-2">
+                <label class="form-label smallest text-muted text-uppercase fw-bold">Focus Range</label>
+                <select id="filterByStatus" class="form-select btn-glass text-white border-0">
+                    <option value="">All Levels</option>
+                    <option value="critical">Critical (<40%)</option>
+                    <option value="poor">Poor (40-60%)</option>
+                    <option value="fair">Fair (60-75%)</option>
+                    <option value="good">Good (75-90%)</option>
+                    <option value="excellent">Excellent (>90%)</option>
+                </select>
+            </div>
+            <div class="col-lg-2">
+                <label class="form-label smallest text-muted text-uppercase fw-bold">Sort By</label>
+                <select id="sortBy" class="form-select btn-glass text-white border-0">
+                    <option value="attention-asc">Critical First</option>
+                    <option value="attention-desc">Attentive First</option>
+                    <option value="alerts-desc">Highest Anomalies</option>
+                    <option value="name-asc">Alphabetical</option>
+                </select>
+            </div>
+            <div class="col-lg-2">
+                <label class="form-label smallest text-muted text-uppercase fw-bold">Window</label>
+                <select id="timeRangeFilter" class="form-select btn-glass text-white border-0">
+                    <option value="1">Last 60m</option>
+                    <option value="4">Last 4h</option>
+                    <option value="24">Last 24h</option>
+                    <option value="7">Last 7d</option>
+                </select>
+            </div>
+            <div class="col-lg-2 d-flex align-items-end">
+                <button id="applyFilters" class="btn btn-primary w-100 fw-bold">
+                    <i class="fas fa-sync-alt me-2"></i> Re-Sync
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Grid -->
+    <div class="row g-3 mb-4 text-center">
+        <div class="col-6 col-md-3">
+            <div class="glass-card p-4">
+                <div class="h2 mb-1 text-white fw-bold" id="statTotal">0</div>
+                <div class="text-muted smallest text-uppercase fw-bold">Total Matrix</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="glass-card p-4 border-danger-subtle border-top border-4">
+                <div class="h2 mb-1 text-danger fw-bold" id="statCritical">0</div>
+                <div class="text-muted smallest text-uppercase fw-bold">Critical Drift</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="glass-card p-4 border-warning-subtle border-top border-4">
+                <div class="h2 mb-1 text-warning fw-bold" id="statAlerts">0</div>
+                <div class="text-muted smallest text-uppercase fw-bold">Active Alerts</div>
+            </div>
+        </div>
+        <div class="col-6 col-md-3">
+            <div class="glass-card p-4 border-primary-subtle border-top border-4">
+                <div class="h2 mb-1 text-primary fw-bold" id="statAvgAttention">--</div>
+                <div class="text-muted smallest text-uppercase fw-bold">Global Focus</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Table Container -->
+    <div class="glass-card mb-4">
+        <div class="table-responsive">
+            <table class="table table-dark-glass table-hover mb-0" id="studentTable">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Identifier</th>
+                        <th>Sector</th>
+                        <th>Focus Index</th>
+                        <th>Status</th>
+                        <th>Drowsy</th>
+                        <th>Posture</th>
+                        <th>Anomalies</th>
+                        <th class="text-end">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="studentTableBody">
+                    <tr class="text-center">
+                        <td colspan="9" class="py-5">
+                            <div class="spinner-border text-primary mb-2" role="status"></div>
+                            <p class="text-muted small">Loading intelligence data...</p>
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="p-3 d-flex justify-content-between align-items-center bg-white-5">
+            <small class="text-muted">Matrix Size: <span id="rowsShown">0</span> / <span id="rowsTotal">0</span></small>
+            <small class="text-muted">Last Sync: <span id="lastUpdate">--:--:--</span></small>
+        </div>
+    </div>
+
+    <!-- Pagination -->
+    <nav aria-label="Table pagination" class="mb-5">
+        <ul class="pagination justify-content-center" id="paginationControls"></ul>
+    </nav>
+
+    <!-- Detailed Analysis Modal -->
+    <div class="modal fade" id="studentDetailModal" tabindex="-1">
+        <div class="modal-dialog modal-xl modal-dialog-centered">
+            <div class="modal-content glass-card border-0 overflow-hidden">
+                <div class="modal-header border-bottom border-white-10 p-4">
+                    <h5 class="modal-title text-white fw-bold">
+                        <i class="fas fa-fingerprint text-primary me-2"></i> Deep Analytics: <span id="detailStudentName"></span>
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row g-4">
+                        <div class="col-lg-7">
+                            <div class="btn-glass p-4 rounded-4 h-100">
+                                <h6 class="text-white fw-bold mb-4">Behavioral Geometry</h6>
+                                <canvas id="radarChart" height="300"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-lg-5">
+                            <div class="btn-glass p-4 rounded-4 h-100">
+                                <h6 class="text-white fw-bold mb-4">Anomaly Timeline</h6>
+                                <div id="detailAlertsList" class="custom-scrollbar" style="max-height: 350px; overflow-y: auto;">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <div class="btn-glass p-4 rounded-4">
+                                <h6 class="text-white fw-bold mb-3">Recent Intelligence Events</h6>
+                                <div id="detailEventsList" class="custom-scrollbar" style="max-height: 200px; overflow-y: auto;">
+                                    <!-- Populated by JS -->
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notification Container -->
+    <div id="notificationContainer" class="notification-container"></div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+<script src="{% static 'js/behavior_dashboard.js' %}"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const apiBase = '{{ api_base_url|default:"/api" }}';
+        initializeAttentionList(apiBase);
+    });
+</script>
+{% endblock %}

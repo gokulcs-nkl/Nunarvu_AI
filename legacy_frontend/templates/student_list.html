@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Identity Registry | CMS AI{% endblock %}
+
+{% block extra_css %}
+<style>
+    .identity-table-container {
+        border-radius: 24px;
+        overflow: hidden;
+        border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+    .status-badge-identity {
+        font-size: 0.7rem;
+        padding: 6px 12px;
+        border-radius: 8px;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+        font-weight: 700;
+    }
+    .badge-authorized {
+        background: rgba(16, 185, 129, 0.2);
+        color: #10b981;
+        border: 1px solid rgba(16, 185, 129, 0.3);
+    }
+    .badge-pending {
+        background: rgba(239, 68, 68, 0.2);
+        color: #ef4444;
+        border: 1px solid rgba(239, 68, 68, 0.3);
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <!-- Header -->
+    <div class="glass-card p-4 mb-4">
+        <div class="row align-items-center">
+            <div class="col-md-8">
+                <h1 class="h2 mb-1 text-white fw-bold">
+                    <i class="fas fa-id-card text-primary me-2"></i> Identity Registry
+                </h1>
+                <p class="text-muted mb-0">Unified management of neural identity vectors and authorizations</p>
+            </div>
+            <div class="col-md-4 text-end">
+                <div class="d-flex gap-2 justify-content-end">
+                    <a href="{% url 'home' %}" class="btn btn-glass px-4 fw-bold">
+                        <i class="fas fa-home me-2"></i> Exit
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Registry Matrix -->
+    <div class="glass-card p-0 overflow-hidden identity-table-container">
+        <div class="table-responsive">
+            <table class="table table-dark-glass table-hover mb-0">
+                <thead>
+                    <tr>
+                        <th class="ps-4">Full Name</th>
+                        <th>Email Contact</th>
+                        <th>Neural ID / Phone</th>
+                        <th>Registry Class</th>
+                        <th>Sync Status</th>
+                        <th class="pe-4 text-end">Management</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for student in students %}
+                    <tr>
+                        <td class="ps-4">
+                            <div class="d-flex align-items-center">
+                                <div class="btn-glass p-2 rounded-circle me-3">
+                                    <i class="fas fa-user text-primary"></i>
+                                </div>
+                                <span class="text-white fw-bold">{{ student.name }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            <span class="text-muted small">{{ student.email }}</span>
+                        </td>
+                        <td>
+                            <span class="text-primary smallest fw-bold">{{ student.phone_number }}</span>
+                        </td>
+                        <td>
+                            <span class="badge btn-glass text-white-50">{{ student.student_class }}</span>
+                        </td>
+                        <td>
+                            {% if student.authorized %}
+                                <span class="status-badge-identity badge-authorized">
+                                    <i class="fas fa-check-circle me-1"></i> Authorized
+                                </span>
+                            {% else %}
+                                <span class="status-badge-identity badge-pending">
+                                    <i class="fas fa-clock me-1"></i> Pending
+                                </span>
+                            {% endif %}
+                        </td>
+                        <td class="pe-4 text-end">
+                            <a href="{% url 'manage-student-authorize' pk=student.pk %}" class="btn btn-glass btn-sm px-3 fw-bold">
+                                <i class="fas fa-fingerprint me-2"></i> Manage
+                            </a>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" class="text-center py-5 text-muted">
+                            <i class="fas fa-folder-open fa-3x mb-3 opacity-25"></i>
+                            <p>No identities registered in the system.</p>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Actions Footer -->
+    <div class="mt-4 d-flex gap-3">
+        <a href="{% url 'capture_student' %}" class="btn btn-primary px-4 fw-bold">
+            <i class="fas fa-plus-circle me-2"></i> Enroll New Subject
+        </a>
+        <a href="{% url 'capture_and_recognize' %}" class="btn btn-glass-success px-4 fw-bold">
+            <i class="fas fa-video me-2"></i> Launch Neural Handshake
+        </a>
+    </div>
+</div>
+{% endblock %}

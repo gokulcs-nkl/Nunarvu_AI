@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Classroom Monitoring AI | Smart Attendance</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="./assets/css/style.css">
+</head>
+<body>
+    <!-- Navbar -->
+    <nav class="navbar">
+        <div class="logo">
+            <i class="fas fa-brain"></i>
+            CMS AI
+        </div>
+        <div>
+            <button class="login-btn" onclick="showLogin()">
+                <i class="fas fa-sign-in-alt"></i> Login
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="hero-content">
+            <h1>AI-Powered Classroom Intelligence</h1>
+            <p class="hero-subtitle">
+                Revolutionize educational monitoring with real-time face recognition, 
+                behavior analysis, and automated attendance tracking.
+            </p>
+            
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-camera"></i>
+                    </div>
+                    <h3>Face Recognition</h3>
+                    <p>Advanced AI-powered face detection and recognition technology</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <h3>Real-time Tracking</h3>
+                    <p>Instant attendance marking with automatic time logging</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-chart-bar"></i>
+                    </div>
+                    <h3>Analytics Dashboard</h3>
+                    <p>Comprehensive reports and insights for better management</p>
+                </div>
+                
+                <div class="feature-card">
+                    <div class="feature-icon">
+                        <i class="fas fa-shield-alt"></i>
+                    </div>
+                    <h3>Secure & Private</h3>
+                    <p>Enterprise-grade security with encrypted data protection</p>
+                </div>
+            </div>
+
+            <div class="cta-section">
+                <button class="cta-btn" onclick="showLogin()">
+                    <i class="fas fa-rocket"></i> Get Started
+                </button>
+                <button class="cta-btn secondary" onclick="showDemo()">
+                    <i class="fas fa-play"></i> View Demo
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits Section -->
+    <section class="benefits">
+        <div class="container">
+            <h2>Why Choose CMS?</h2>
+            <div class="benefits-grid">
+                <div class="benefit">
+                    <i class="fas fa-check-circle"></i>
+                    <div class="benefit-text">
+                        <h4>🚀 Lightning Fast</h4>
+                        <p>Process attendance in under 2 seconds per student</p>
+                    </div>
+                </div>
+                
+                <div class="benefit">
+                    <i class="fas fa-check-circle"></i>
+                    <div class="benefit-text">
+                        <h4>📱 Multi-Platform</h4>
+                        <p>Works on desktop, tablet, and mobile devices</p>
+                    </div>
+                </div>
+                
+                <div class="benefit">
+                    <i class="fas fa-check-circle"></i>
+                    <div class="benefit-text">
+                        <h4>🔒 Secure Records</h4>
+                        <p>Protected student data with encrypted storage</p>
+                    </div>
+                </div>
+                
+                <div class="benefit">
+                    <i class="fas fa-check-circle"></i>
+                    <div class="benefit-text">
+                        <h4>👥 Scalable Solution</h4>
+                        <p>Works for single or multiple classrooms</p>
+                    </div>
+                </div>
+                
+                <div class="benefit">
+                    <i class="fas fa-check-circle"></i>
+                    <div class="benefit-text">
+                        <h4>📈 Detailed Reports</h4>
+                        <p>Export and analyze attendance patterns</p>
+                    </div>
+                </div>
+                
+                <div class="benefit">
+                    <i class="fas fa-check-circle"></i>
+                    <div class="benefit-text">
+                        <h4>🎓 Student Management</h4>
+                        <p>Complete student profile and authorization system</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeLogin()">&times;</span>
+            <h2><i class="fas fa-sign-in-alt"></i> Login to CMS</h2>
+            <form id="loginForm">
+                <div class="form-group">
+                    <label for="username">Username:</label>
+                    <input type="text" id="username" name="username" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password:</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" class="btn-primary">
+                        <i class="fas fa-sign-in-alt"></i> Login
+                    </button>
+                </div>
+            </form>
+            <div id="loginError" class="error"></div>
+        </div>
+    </div>
+
+    <!-- API Configuration -->
+    <script>
+        // API Base URL - Update this to match your backend service
+        const API_BASE_URL = 'http://localhost:8000/api';
+    </script>
+    
+    <script src="./assets/js/auth.js"></script>
+    <script src="./assets/js/main.js"></script>
+</body>
+</html>
