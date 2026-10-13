@@ -12,7 +12,7 @@ teacher-reviewed classroom observations, built with Django and React.
 | 1 | Roles, academic data, period timings, sessions, web app shell | Done |
 | 2 | Consent-based face enrolment, attendance from the camera, teacher review, attendance report | Done |
 | 3 | Background camera worker, IP cameras, live view over WebSocket, camera management | Done |
-| 4 | Behaviour observations | Not started |
+| 4 | Classroom observations (hand raise, head-down posture, phone-like object, unusual activity) with teacher review | Done, not yet evaluated |
 | 5+ | Analytics, PDF export, deployment | Not started |
 
 Recognition accuracy has not been evaluated yet; the match thresholds are
@@ -28,8 +28,9 @@ backend/
     accounts/        Roles, session login, audit log
     academics/       Students, classes, subjects, rooms, periods, timetable, sessions
     attendance/      Face enrolment, session attendance rules, review, report
-    monitoring/      Cameras, the camera worker, live updates
-  vision/            Camera capture with reconnect; face detection, embedding, tracking, matching
+    monitoring/      Cameras, the camera worker, live updates, classroom observations
+  vision/            Camera capture with reconnect; face detection, embedding, tracking, matching;
+                     body-pose rules and event timing
   app1/, behaviour/  Earlier prototype (being replaced)
 frontend/            React + TypeScript web app (Vite, Tailwind)
 legacy_frontend/     Django templates used by the earlier prototype
@@ -124,6 +125,29 @@ python manage.py generate_sessions --date 2026-10-19
    unrecognised face is never given a name.
 4. Ending the session marks unseen students absent. A teacher can correct any
    record; corrections are audited and are not overwritten by the camera.
+
+## Classroom observations
+
+While a session is active the worker can also report four things it sees:
+
+| Observation | What is measured | Default delay |
+|---|---|---|
+| Hand raised | A wrist above its shoulder | 1 s |
+| Head-down posture | Nose at or below the shoulder line | 60 s |
+| Phone-like object | An object detected as a phone inside a person's outline | 5 s |
+| Unusual activity | Two or more fast-moving people close together | 3 s |
+
+Each is stored as an event with its measurements and thresholds, shown to the
+teacher as "not reviewed", and confirmed or dismissed by them. The wording
+describes what was visible; nothing is presented as a conclusion about a
+student. An administrator can switch each observation off or change its delay
+on the Observations page. Run the worker with `--no-observations` to record
+attendance only.
+
+These rules use pretrained models (YOLO11n-pose and YOLO11n) and fixed
+thresholds. Their precision and recall have not been measured yet, and the
+phone and unusual-activity observations in particular should be expected to
+miss cases and raise false alarms.
 
 ## API and tests
 

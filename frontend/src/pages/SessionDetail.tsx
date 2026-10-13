@@ -1,12 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link, useParams } from 'react-router-dom'
 
+import { EventList } from '../components/EventList'
 import { LivePanel } from '../components/LivePanel'
 import { Alert, Badge, Button, Card, EmptyState, PageHeader, Spinner } from '../components/ui'
 import { api, apiList, ApiError } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { STATUS_LABEL } from '../lib/types'
-import type { AttendanceRecord, AttendanceStatus, ClassSession, Student } from '../lib/types'
+import type { AttendanceRecord, AttendanceStatus, ClassroomEvent, ClassSession, Student } from '../lib/types'
 import { STATUS_TONE } from './Sessions'
 
 const errorText = (error: unknown) => (error instanceof ApiError ? error.message : 'Something went wrong.')
@@ -32,7 +33,16 @@ export function SessionDetail() {
     enabled: canEdit && !!session.data,
   })
 
-  const refreshRecords = () => queryClient.invalidateQueries({ queryKey: ['attendance', sessionId] })
+  const events = useQuery({
+    queryKey: ['events', 'session', sessionId],
+    queryFn: () => apiList<ClassroomEvent>(`/events/?session=${sessionId}`),
+    enabled: canEdit,
+  })
+
+  const refreshRecords = () => {
+    void queryClient.invalidateQueries({ queryKey: ['events', 'session', sessionId] })
+    return queryClient.invalidateQueries({ queryKey: ['attendance', sessionId] })
+  }
   const refreshSession = () => {
     void queryClient.invalidateQueries({ queryKey: ['session', sessionId] })
     void queryClient.invalidateQueries({ queryKey: ['sessions'] })
@@ -158,6 +168,15 @@ export function SessionDetail() {
                   </li>
                 ))}
               </ul>
+            </Card>
+          )}
+
+          {canEdit && events.data && events.data.length > 0 && (
+            <Card title={`Observations (${events.data.length})`}>
+              <p className="mb-1 text-xs text-muted">
+                What the camera noticed, for you to confirm or dismiss. These describe what was visible, not why.
+              </p>
+              <EventList events={events.data} canReview />
             </Card>
           )}
 

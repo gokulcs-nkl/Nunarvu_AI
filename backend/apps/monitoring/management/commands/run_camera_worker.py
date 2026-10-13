@@ -8,6 +8,7 @@ from django.db import close_old_connections
 
 from apps.monitoring.models import Camera
 from apps.monitoring.worker import CameraWorker, HttpPublisher, NullPublisher
+from vision.behavior.detectors import BehaviorModelsNotAvailable, PhoneDetector, PoseEstimator
 from vision.face.engine import ModelNotAvailable, get_engine
 
 RESCAN_SECONDS = 10
@@ -22,6 +23,7 @@ class Command(BaseCommand):
 
     def add_arguments(self, parser):
         parser.add_argument('--camera', type=int, action='append', help="Camera ID to run (repeatable)")
+        parser.add_argument('--no-observations', action='store_true', help="Record attendance only; skip posture and phone checks")
 
     def handle(self, *args, **options):
         logging.basicConfig(level=logging.INFO, format='%(asctime)s %(levelname)s %(message)s')
@@ -30,6 +32,15 @@ class Command(BaseCommand):
         except ModelNotAvailable as error:
             raise CommandError(f"{error}. Run `python manage.py download_face_models` first.")
         self.stdout.write(f"Face models: {engine.model_name} on {', '.join(engine.providers)}")
+
+        pose = phones = None
+        if not options['no_observations']:
+            try:
+                pose = PoseEstimator(settings.BEHAVIOR_POSE_MODEL)
+                phones = PhoneDetector(settings.BEHAVIOR_OBJECT_MODEL)
+                self.stdout.write("Classroom observations: on")
+            except BehaviorModelsNotAvailable as error:
+                self.stdout.write(self.style.WARNING(f"Classroom observations are off: {error}"))
 
         if settings.WORKER_TOKEN:
             publisher = HttpPublisher(settings.WORKER_WEB_URL, settings.WORKER_TOKEN)
@@ -45,7 +56,7 @@ class Command(BaseCommand):
 
         def run(camera):
             try:
-                CameraWorker(camera, engine, publisher).run(stop)
+                CameraWorker(camera, engine, publisher, pose=pose, phones=phones).run(stop)
             finally:
                 close_old_connections()
 

@@ -21,14 +21,18 @@ from apps.attendance.embeddings import gallery_for_class
 from apps.attendance.services import Sighting, record_sightings
 from vision.capture import FrameGrabber
 from vision.face import matcher
+from vision.behavior.analyzer import BehaviorAnalyzer, Person
 from vision.face.tracker import FaceTracker
 
+from . import observations
 from .models import Camera, CameraStatusLog
 
 logger = logging.getLogger(__name__)
 
 SESSION_REFRESH_SECONDS = 2.0
 GALLERY_REFRESH_SECONDS = 30.0
+OBSERVATION_SETTINGS_REFRESH_SECONDS = 30.0
+PHONE_BOXES_MAX_AGE = 1.5
 HEARTBEAT_SECONDS = 5.0
 CONFIG_REFRESH_SECONDS = 10.0
 
@@ -83,9 +87,18 @@ def active_session_for(camera: Camera) -> ClassSession | None:
 
 
 class CameraWorker:
-    def __init__(self, camera: Camera, engine, publisher=None, grabber=None):
+    def __init__(self, camera: Camera, engine, publisher=None, grabber=None, pose=None, phones=None):
         self.camera = camera
         self.engine = engine
+        # Optional: without a pose estimator the worker records attendance only.
+        self.pose = pose
+        self.phones = phones
+        self.person_tracker = FaceTracker(min_iou=0.3, max_gap=2.0)
+        self.analyzer = BehaviorAnalyzer()
+        self._thresholds_loaded = 0.0
+        self._last_behavior = self._last_phone = 0.0
+        self._phone_boxes: list = []
+        self._people_count = 0
         self.publisher = publisher or NullPublisher()
         self.grabber = grabber or FrameGrabber(camera.source_type, camera.source)
         self.tracker = FaceTracker()
@@ -112,6 +125,11 @@ class CameraWorker:
             for track in self.tracker.tracks.values():
                 track.band, track.student_id, track.score, track.reason, track.recognized_at = 'unknown', None, 0.0, '', None
             self._gallery_key = None
+            if self.session is not None:
+                # Close observations still open in the session that just ended.
+                observations.record_updates(self.session, self.camera, self.analyzer.close_all(now), self.analyzer.thresholds)
+            else:
+                self.analyzer.close_all(now)
         self.session = session
 
     def _refresh_gallery(self, now: float) -> None:
@@ -162,6 +180,8 @@ class CameraWorker:
                 at = datetime.fromtimestamp(now, tz=dt_timezone.utc)
                 changed = record_sightings(self.session, sightings, at=at)
 
+        new_events = self._observe(frame, tracks, now) if self.session is not None and self.pose is not None else []
+
         elapsed_ms = (time.perf_counter() - started) * 1000
         self._latency_ms = elapsed_ms if not self._latency_ms else 0.8 * self._latency_ms + 0.2 * elapsed_ms
         if self._last_step:
@@ -196,7 +216,49 @@ class CameraWorker:
                 {'student': record.student_id, 'status': record.status, 'student_name': self._names.get(record.student_id)}
                 for record in changed
             ],
+            'people': self._people_count,
+            'events': [
+                {'id': event.id, 'kind': event.kind, 'student': event.student_id, 'summary': event.summary}
+                for event in new_events
+            ],
         }
+
+    def _observe(self, frame: np.ndarray, face_tracks: list, now: float) -> list:
+        """Run the posture and phone checks at their own, lower rate and store any events."""
+        if now - self._last_behavior < 1.0 / settings.WORKER_BEHAVIOR_FPS:
+            return []
+        self._last_behavior = now
+        if now - self._thresholds_loaded >= OBSERVATION_SETTINGS_REFRESH_SECONDS:
+            self.analyzer.thresholds = observations.thresholds_from_settings()
+            self._thresholds_loaded = now
+        thresholds = self.analyzer.thresholds
+        if not thresholds.enabled:
+            self._people_count = 0
+            return []
+
+        found = self.pose.detect(frame)
+        person_tracks = self.person_tracker.update([box for box, _, _ in found], now)
+        self._people_count = len(found)
+
+        if self.phones is not None and 'phone' in thresholds.enabled and now - self._last_phone >= 1.0 / settings.WORKER_PHONE_FPS:
+            self._last_phone = now
+            self._phone_boxes = self.phones.detect(frame)
+        phone_boxes = self._phone_boxes if now - self._last_phone <= PHONE_BOXES_MAX_AGE else []
+
+        # A person is the student whose confirmed face sits inside that person's box.
+        identified = [
+            (((t.box[0] + t.box[2]) / 2, (t.box[1] + t.box[3]) / 2), t.student_id)
+            for t in face_tracks if t.band == matcher.CONFIRMED and t.student_id is not None
+        ]
+        people = []
+        for track, (box, keypoints, confidence) in zip(person_tracks, found):
+            student_id = next(
+                (student for (x, y), student in identified if box[0] <= x <= box[2] and box[1] <= y <= box[3]), None,
+            )
+            people.append(Person(track.id, box, keypoints, confidence, student_id))
+
+        updates = self.analyzer.update(people, phone_boxes, now)
+        return observations.record_updates(self.session, self.camera, updates, thresholds) if updates else []
 
     # ----- status ---------------------------------------------------------
 
@@ -217,7 +279,7 @@ class CameraWorker:
         return {
             'camera': self.camera.id, 'camera_name': self.camera.name, 'status': Camera.Status.ERROR, 'error': error,
             'session': self.session.id if self.session else None, 'timestamp': now, 'frame_size': [0, 0],
-            'fps': 0, 'latency_ms': 0, 'faces': [], 'changed': [],
+            'fps': 0, 'latency_ms': 0, 'faces': [], 'changed': [], 'people': 0, 'events': [],
         }
 
     def _config_changed(self) -> bool:

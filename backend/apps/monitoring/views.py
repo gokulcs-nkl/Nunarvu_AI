@@ -4,19 +4,22 @@ import time
 from django.conf import settings
 from django.http import HttpResponse
 from django.shortcuts import get_object_or_404
+from django.utils import timezone
 from rest_framework import status, viewsets
+from rest_framework.decorators import action
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.parsers import BaseParser
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from apps.accounts.audit import AuditedModelViewSetMixin
+from apps.accounts.audit import AuditedModelViewSetMixin, record
+from apps.accounts.models import Role, get_role
 from apps.accounts.permissions import ADMIN_ONLY, STAFF_ROLES, RolePermission
 from vision.capture import open_capture
 
 from . import live
-from .models import Camera
-from .serializers import CameraSerializer
+from .models import Camera, ClassroomEvent, ObservationSettings
+from .serializers import CameraSerializer, ClassroomEventSerializer, ObservationSettingsSerializer
 from .worker import encode_preview
 
 MAX_FRAME_BYTES = 2 * 1024 * 1024
@@ -127,3 +130,60 @@ class CameraTestView(APIView):
         live.store_frame(pk, encode_preview(frame))
         height, width = frame.shape[:2]
         return Response({'ok': True, 'source': 'direct', 'detail': f'Received a {width}x{height} frame.'})
+
+
+class ClassroomEventViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Classroom observations. Teachers see events from their own sessions. An event is changed
+    only through `review`, which records who confirmed or dismissed it.
+    """
+    queryset = ClassroomEvent.objects.select_related('student', 'reviewed_by', 'session')
+    serializer_class = ClassroomEventSerializer
+    permission_classes = [RolePermission]
+    read_roles = STAFF_ROLES
+    write_roles = STAFF_ROLES
+
+    def get_queryset(self):
+        queryset = super().get_queryset()
+        if get_role(self.request.user) == Role.TEACHER:
+            queryset = queryset.filter(session__teacher__user=self.request.user)
+        params = self.request.query_params
+        for field in ('session', 'kind', 'review_status', 'student'):
+            if params.get(field):
+                queryset = queryset.filter(**{field: params[field]})
+        if params.get('date'):
+            queryset = queryset.filter(session__date=params['date'])
+        return queryset
+
+    @action(detail=True, methods=['post'])
+    def review(self, request, pk=None):
+        event = self.get_object()
+        decision = request.data.get('status')
+        if decision not in ClassroomEvent.Review.values:
+            raise ValidationError({'status': 'Use confirmed, dismissed or unreviewed.'})
+        previous = event.review_status
+        event.review_status = decision
+        reviewed = decision != ClassroomEvent.Review.UNREVIEWED
+        event.reviewed_by = request.user if reviewed else None
+        event.reviewed_at = timezone.now() if reviewed else None
+        event.save(update_fields=['review_status', 'reviewed_by', 'reviewed_at'])
+        record(request, 'review_event', event, {'from': previous, 'to': decision})
+        return Response(self.get_serializer(event).data)
+
+
+class ObservationSettingsView(APIView):
+    """Which observations are on and how long each must last. Staff can read; administrators change."""
+    permission_classes = [RolePermission]
+    read_roles = STAFF_ROLES
+    write_roles = ADMIN_ONLY
+
+    def get(self, request):
+        return Response(ObservationSettingsSerializer(ObservationSettings.load()).data)
+
+    def put(self, request):
+        config = ObservationSettings.load()
+        serializer = ObservationSettingsSerializer(config, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        record(request, 'update_observation_settings', config, {'fields': sorted(serializer.validated_data)})
+        return Response(serializer.data)

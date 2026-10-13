@@ -6,6 +6,7 @@ import { useAuth } from './lib/auth'
 import { Cameras } from './pages/Cameras'
 import { Landing } from './pages/Landing'
 import { Login } from './pages/Login'
+import { Observations } from './pages/Observations'
 import { Overview } from './pages/Overview'
 import { PeriodSettings } from './pages/PeriodSettings'
 import { Reports } from './pages/Reports'
@@ -53,6 +54,7 @@ export default function App() {
           <Route path="sessions" element={<Sessions />} />
           <Route path="sessions/:id" element={<SessionDetail />} />
           <Route path="students" element={<Students />} />
+          <Route path="observations" element={<Observations />} />
           <Route path="reports" element={<Reports />} />
           <Route path="cameras" element={<Cameras />} />
           <Route path="setup" element={<Setup />} />

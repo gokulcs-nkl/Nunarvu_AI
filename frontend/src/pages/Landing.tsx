@@ -182,6 +182,34 @@ function ReviewMock() {
   )
 }
 
+function ObservationMock() {
+  const items = [
+    ['Hand raised', 'Asha R', 'Hand raised above shoulder height.'],
+    ['Phone-like object', 'Unidentified person', 'Phone-like object visible near this person for over 5 s.'],
+  ]
+  return (
+    <Browser>
+      <p className="border-b border-line px-3 py-2 text-[11px] font-semibold text-ink">Observations (2)</p>
+      <ul className="divide-y divide-line text-[11px]">
+        {items.map(([kind, who, summary]) => (
+          <li key={kind} className="flex items-center justify-between gap-3 px-3 py-2.5">
+            <div className="min-w-0">
+              <p className="font-medium text-ink">
+                {kind} <span className="font-normal text-muted">{who}</span>
+              </p>
+              <p className="text-muted">{summary}</p>
+            </div>
+            <div className="flex shrink-0 gap-1.5">
+              <span className="rounded border border-line px-2 py-1 font-medium text-ink">Confirm</span>
+              <span className="rounded border border-line px-2 py-1 font-medium text-ink">Dismiss</span>
+            </div>
+          </li>
+        ))}
+      </ul>
+    </Browser>
+  )
+}
+
 /* ----------------------------------------------------------------------------
  * Page building blocks
  * ------------------------------------------------------------------------- */
@@ -223,7 +251,7 @@ const PRINCIPLES = [
 ]
 
 const ROADMAP = [
-  ['Classroom observations', 'Hand raises, standing, leaving a seat and phone-like objects, reported as observations for the teacher to verify.'],
+  ['Measured accuracy', 'Recognition and observation accuracy measured on recorded, consented sessions, and published with the project.'],
   ['Analytics and PDF reports', 'Attendance trends across dates, classes and subjects, with downloadable PDF reports.'],
   ['Packaged deployment', 'One-command setup with PostgreSQL, backups and health checks.'],
 ]
@@ -362,12 +390,17 @@ export function Landing() {
                 visual={<ReviewMock />}
               />
               <Feature
+                title="Observations, not judgements"
+                text="The camera can report a raised hand, a head-down posture, a phone-like object or sudden fast movement. Each report says what was measured and waits for the teacher to confirm or dismiss it."
+                visual={<ObservationMock />}
+              />
+              <Feature
+                flip
                 title="Timings that fit your timetable"
                 text="Set one default schedule, give any weekday its own timings, or change a single date. Or set nothing at all and start sessions by hand."
                 visual={<PeriodsMock />}
               />
               <Feature
-                flip
                 title="Reports from stored records"
                 text="Attendance percentages by student, filtered by class, subject and date range, with CSV export. Records still awaiting review are left out of the percentage."
                 visual={<ReportMock />}

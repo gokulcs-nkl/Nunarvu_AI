@@ -318,3 +318,9 @@ WORKER_PREVIEW_FPS = float(get_env_variable('WORKER_PREVIEW_FPS', '2'))
 WORKER_PREVIEW_WIDTH = int(get_env_variable('WORKER_PREVIEW_WIDTH', '960'))
 # How often a tracked face is recognised again; each confirmed recognition counts as one sighting.
 WORKER_RECOGNIZE_EVERY_SECONDS = float(get_env_variable('WORKER_RECOGNIZE_EVERY_SECONDS', '3'))
+
+# Classroom observations (body pose and phone-like objects)
+BEHAVIOR_POSE_MODEL = BASE_DIR / get_env_variable('BEHAVIOR_POSE_MODEL', 'models/yolo11n-pose.pt')
+BEHAVIOR_OBJECT_MODEL = BASE_DIR / get_env_variable('BEHAVIOR_OBJECT_MODEL', 'models/yolo11n.pt')
+WORKER_BEHAVIOR_FPS = float(get_env_variable('WORKER_BEHAVIOR_FPS', '2'))
+WORKER_PHONE_FPS = float(get_env_variable('WORKER_PHONE_FPS', '1'))

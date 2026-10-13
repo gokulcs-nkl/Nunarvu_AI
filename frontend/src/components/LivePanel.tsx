@@ -112,7 +112,7 @@ export function LivePanel({ sessionId, onChanged }: { sessionId: number; onChang
     notifyChanged.current = onChanged
   }, [onChanged])
   useEffect(() => {
-    if (payload && payload.changed.length > 0) notifyChanged.current()
+    if (payload && (payload.changed.length > 0 || payload.events.length > 0)) notifyChanged.current()
   }, [payload])
 
   if (live && payload) {
@@ -139,7 +139,7 @@ export function LivePanel({ sessionId, onChanged }: { sessionId: number; onChang
           <div className="mt-3 flex flex-wrap items-center gap-2 text-sm" aria-live="polite">
             <Counts faces={payload.faces} />
             <span className="tabular-nums text-muted">
-              {payload.fps} frames/s · {Math.round(payload.latency_ms)} ms per frame
+              {payload.people} {payload.people === 1 ? 'person' : 'people'} in view · {payload.fps} frames/s · {Math.round(payload.latency_ms)} ms per frame
             </span>
           </div>
         )}

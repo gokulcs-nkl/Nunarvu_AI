@@ -132,6 +132,35 @@ export interface LivePayload {
   latency_ms: number
   faces: RecognizedFace[]
   changed: { student: number; status: AttendanceStatus; student_name: string | null }[]
+  people: number
+  events: { id: number; kind: string; student: number | null; summary: string }[]
+}
+
+export interface ClassroomEvent {
+  id: number
+  session: number
+  kind: 'hand_raise' | 'head_down' | 'phone' | 'unusual_activity'
+  kind_label: string
+  student: number | null
+  student_name: string | null
+  started_at: string
+  ended_at: string | null
+  confidence: number
+  summary: string
+  signals: { signal: string; value: number; threshold: number }[]
+  review_status: 'unreviewed' | 'confirmed' | 'dismissed'
+  reviewed_by_username: string | null
+}
+
+export interface ObservationSettings {
+  hand_raise_enabled: boolean
+  head_down_enabled: boolean
+  phone_enabled: boolean
+  unusual_activity_enabled: boolean
+  hand_raise_seconds: number
+  head_down_seconds: number
+  phone_seconds: number
+  unusual_activity_seconds: number
 }
 
 export interface ReportRow {
