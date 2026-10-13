@@ -6,6 +6,7 @@
   --color-canvas: #f6f7f9;
   --color-line: #e2e5ea;
   --color-ink: #16202e;
+  --color-night: #0b0d12;
   --color-muted: #5b6676;
   --color-brand: #1f4fd8;
   --color-brand-strong: #173fb0;
@@ -22,6 +23,12 @@ html,
 body,
 #root {
   height: 100%;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
 }
 
 body {

@@ -1,9 +1,10 @@
-import { BrowserRouter, Link, Navigate, Route, Routes } from 'react-router-dom'
+import { BrowserRouter, Link, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 
 import { Layout } from './components/Layout'
 import { EmptyState, Spinner } from './components/ui'
 import { useAuth } from './lib/auth'
 import { Cameras } from './pages/Cameras'
+import { Landing } from './pages/Landing'
 import { Login } from './pages/Login'
 import { Overview } from './pages/Overview'
 import { PeriodSettings } from './pages/PeriodSettings'
@@ -15,6 +16,7 @@ import { Students } from './pages/Students'
 
 function Protected() {
   const { user, loading } = useAuth()
+  const location = useLocation()
   if (loading) {
     return (
       <div className="flex min-h-full items-center justify-center">
@@ -22,7 +24,9 @@ function Protected() {
       </div>
     )
   }
-  return user ? <Layout /> : <Navigate to="/login" replace />
+  if (user) return <Layout />
+  // Signed-out visitors see the landing page at the root and the sign-in page everywhere else.
+  return location.pathname === '/' ? <Landing /> : <Navigate to="/login" replace />
 }
 
 function NotFound() {
@@ -43,6 +47,7 @@ export default function App() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/about" element={<Landing />} />
         <Route element={<Protected />}>
           <Route index element={<Overview />} />
           <Route path="sessions" element={<Sessions />} />

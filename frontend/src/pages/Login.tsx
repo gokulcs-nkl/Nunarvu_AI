@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import type { FormEvent } from 'react'
-import { Navigate } from 'react-router-dom'
+import { Link, Navigate } from 'react-router-dom'
 
+import { Logo } from '../components/Logo'
 import { Alert, Button, Input } from '../components/ui'
 import { ApiError } from '../lib/api'
 import { useAuth } from '../lib/auth'
@@ -35,8 +36,11 @@ export function Login() {
   return (
     <div className="flex min-h-full items-center justify-center px-4 py-10">
       <form onSubmit={handleSubmit} className="w-full max-w-sm rounded-lg border border-line bg-surface p-6">
-        <h1 className="text-lg font-semibold">Sign in</h1>
-        <p className="mt-1 text-sm text-muted">Classroom Monitoring System</p>
+        <Link to="/about" aria-label="About Nunarvu AI">
+          <Logo size={32} />
+        </Link>
+        <h1 className="mt-5 text-lg font-semibold">Sign in</h1>
+        <p className="mt-1 text-sm text-muted">Classroom monitoring</p>
 
         <div className="mt-5 space-y-4">
           <div>

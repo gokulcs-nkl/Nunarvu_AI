@@ -3,6 +3,7 @@ import type { LucideIcon } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router-dom'
 
 import { useAuth } from '../lib/auth'
+import { Logo } from './Logo'
 import { ROLE_LABEL } from '../lib/types'
 import type { Role } from '../lib/types'
 import { Button } from './ui'
@@ -33,8 +34,10 @@ export function Layout() {
     <div className="flex min-h-full flex-col md:flex-row">
       <aside className="border-b border-line bg-surface md:w-60 md:shrink-0 md:border-r md:border-b-0">
         <div className="px-4 py-4">
-          <p className="text-sm font-semibold">Classroom Monitoring</p>
-          <p className="text-xs text-muted">RCMS</p>
+          <NavLink to="/about" aria-label="About Nunarvu AI">
+            <Logo size={28} />
+          </NavLink>
+          <p className="mt-1 text-xs text-muted">Classroom monitoring</p>
         </div>
         <nav aria-label="Main" className="flex gap-1 overflow-x-auto px-2 pb-2 md:flex-col md:pb-4">
           {items.map(({ to, label, icon: Icon }) => (

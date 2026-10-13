@@ -1,3 +1,5 @@
+<p><img src="frontend/public/logo.svg" width="72" alt="Nunarvu AI logo"></p>
+
 # Nunarvu AI: Classroom Monitoring System (RCMS)
 
 A classroom monitoring system for automated, period-based attendance and
@@ -86,7 +88,7 @@ npm install
 npm run dev
 ```
 
-Open http://localhost:5173 and sign in. The dev server forwards `/api` to the
+Open http://localhost:5173 for the landing page, then sign in. The dev server forwards `/api` to the
 backend at http://127.0.0.1:8000.
 
 ## Roles
