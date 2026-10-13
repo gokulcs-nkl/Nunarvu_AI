@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from apps.academics import views as academics
 from apps.accounts import auth_views, views as accounts
-from apps.attendance import views as attendance
+from apps.attendance import face_views, views as attendance
 from apps.monitoring import views as monitoring
 
 router = DefaultRouter()
@@ -28,5 +28,8 @@ urlpatterns = [
     path('auth/logout/', auth_views.LogoutView.as_view(), name='v1-logout'),
     path('me/', accounts.me, name='v1-me'),
     path('me/notifications/', accounts.notification_preferences, name='v1-notification-preferences'),
+    path('students/<int:pk>/face-enrollments/', face_views.FaceEnrollmentView.as_view(), name='v1-face-enrollments'),
+    path('sessions/<int:pk>/recognize/', face_views.RecognizeView.as_view(), name='v1-recognize'),
+    path('reports/attendance/', face_views.AttendanceReportView.as_view(), name='v1-attendance-report'),
     path('', include(router.urls)),
 ]

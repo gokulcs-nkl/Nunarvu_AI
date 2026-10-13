@@ -6,6 +6,11 @@ import { useAuth } from './lib/auth'
 import { Login } from './pages/Login'
 import { Overview } from './pages/Overview'
 import { PeriodSettings } from './pages/PeriodSettings'
+import { Reports } from './pages/Reports'
+import { SessionDetail } from './pages/SessionDetail'
+import { Sessions } from './pages/Sessions'
+import { Setup } from './pages/Setup'
+import { Students } from './pages/Students'
 
 function Protected() {
   const { user, loading } = useAuth()
@@ -39,6 +44,11 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route element={<Protected />}>
           <Route index element={<Overview />} />
+          <Route path="sessions" element={<Sessions />} />
+          <Route path="sessions/:id" element={<SessionDetail />} />
+          <Route path="students" element={<Students />} />
+          <Route path="reports" element={<Reports />} />
+          <Route path="setup" element={<Setup />} />
           <Route path="settings/periods" element={<PeriodSettings />} />
           <Route path="*" element={<NotFound />} />
         </Route>

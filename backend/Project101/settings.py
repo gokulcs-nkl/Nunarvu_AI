@@ -194,7 +194,7 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.MultiPartParser',
         'rest_framework.parsers.FileUploadParser',
     ],
-    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'DEFAULT_PAGINATION_CLASS': 'apps.pagination.StandardPagination',
     'PAGE_SIZE': 20,
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
@@ -269,3 +269,28 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+
+# ---------------------------------------------------------------------------
+# Face recognition and attendance rules
+# ---------------------------------------------------------------------------
+FACE_MODEL_DIR = Path(get_env_variable('FACE_MODEL_DIR', str(BASE_DIR / 'models' / 'buffalo_l')))
+FACE_DETECTOR_MODEL = FACE_MODEL_DIR / get_env_variable('FACE_DETECTOR_FILE', 'det_10g.onnx')
+FACE_RECOGNIZER_MODEL = FACE_MODEL_DIR / get_env_variable('FACE_RECOGNIZER_FILE', 'w600k_r50.onnx')
+
+# Key that encrypts stored face embeddings. Required before any face can be enrolled.
+FACE_EMBEDDING_KEY = get_env_variable('FACE_EMBEDDING_KEY', '')
+
+# Cosine-similarity thresholds. These are starting values, to be tuned on evaluation data.
+FACE_MATCH_CONFIRM = float(get_env_variable('FACE_MATCH_CONFIRM', '0.50'))
+FACE_MATCH_REVIEW = float(get_env_variable('FACE_MATCH_REVIEW', '0.35'))
+FACE_MATCH_MARGIN = float(get_env_variable('FACE_MATCH_MARGIN', '0.05'))
+
+# Enrolment quality gates
+FACE_ENROLL_MIN_SIZE = int(get_env_variable('FACE_ENROLL_MIN_SIZE', '80'))  # pixels
+FACE_ENROLL_MIN_SCORE = float(get_env_variable('FACE_ENROLL_MIN_SCORE', '0.70'))
+FACE_ENROLL_MAX_PER_STUDENT = int(get_env_variable('FACE_ENROLL_MAX_PER_STUDENT', '10'))
+
+# Session rules
+ATTENDANCE_WINDOW_MINUTES = int(get_env_variable('ATTENDANCE_WINDOW_MINUTES', '5'))
+ATTENDANCE_CONFIRM_SIGHTINGS = int(get_env_variable('ATTENDANCE_CONFIRM_SIGHTINGS', '2'))
+ATTENDANCE_LATE_AFTER_MINUTES = int(get_env_variable('ATTENDANCE_LATE_AFTER_MINUTES', '10'))

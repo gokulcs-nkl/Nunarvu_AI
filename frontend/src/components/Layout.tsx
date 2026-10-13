@@ -1,4 +1,4 @@
-import { CalendarClock, LayoutDashboard, LogOut } from 'lucide-react'
+import { BarChart3, CalendarClock, GraduationCap, LayoutDashboard, LogOut, School, Users } from 'lucide-react'
 import type { LucideIcon } from 'lucide-react'
 import { NavLink, Outlet } from 'react-router-dom'
 
@@ -16,6 +16,10 @@ interface NavItem {
 
 const NAV: NavItem[] = [
   { to: '/', label: 'Overview', icon: LayoutDashboard, roles: ['admin', 'teacher', 'viewer'] },
+  { to: '/sessions', label: 'Sessions', icon: School, roles: ['admin', 'teacher', 'viewer'] },
+  { to: '/students', label: 'Students', icon: Users, roles: ['admin', 'teacher'] },
+  { to: '/reports', label: 'Reports', icon: BarChart3, roles: ['admin', 'teacher'] },
+  { to: '/setup', label: 'Classes and subjects', icon: GraduationCap, roles: ['admin', 'teacher', 'viewer'] },
   { to: '/settings/periods', label: 'Period timings', icon: CalendarClock, roles: ['admin', 'teacher', 'viewer'] },
 ]
 

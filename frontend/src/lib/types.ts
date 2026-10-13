@@ -41,3 +41,81 @@ export const ROLE_LABEL: Record<Role, string> = {
   teacher: 'Teacher',
   viewer: 'Viewer',
 }
+
+export interface ClassGroup {
+  id: number
+  name: string
+  academic_year: string
+  student_count: number
+}
+
+export interface Subject {
+  id: number
+  code: string
+  name: string
+}
+
+export interface Student {
+  id: number
+  roll_number: string
+  full_name: string
+  email: string
+  phone_number: string
+  is_active: boolean
+  consent_given: boolean
+  consent_recorded_at: string | null
+  class_groups: number[]
+  face_enrollment_count: number
+}
+
+export type AttendanceStatus = 'pending' | 'present' | 'late' | 'left_early' | 'absent'
+
+export interface AttendanceRecord {
+  id: number
+  session: number
+  student: number
+  student_name: string
+  roll_number: string
+  status: AttendanceStatus
+  source: 'auto' | 'manual'
+  first_seen_at: string | null
+  last_seen_at: string | null
+  confidence: number | null
+  note: string
+}
+
+export interface RecognizedFace {
+  box: [number, number, number, number]
+  band: 'confirmed' | 'review' | 'unknown'
+  student: number | null
+  student_name: string | null
+  score: number
+  reason: string
+}
+
+export interface RecognizeResult {
+  faces: RecognizedFace[]
+  enrolled_students: number
+  changed: AttendanceRecord[]
+}
+
+export interface ReportRow {
+  student: number
+  roll_number: string
+  full_name: string
+  sessions: number
+  present: number
+  late: number
+  left_early: number
+  absent: number
+  pending: number
+  attendance_percent: number | null
+}
+
+export const STATUS_LABEL: Record<AttendanceStatus, string> = {
+  pending: 'Pending review',
+  present: 'Present',
+  late: 'Late',
+  left_early: 'Left early',
+  absent: 'Absent',
+}

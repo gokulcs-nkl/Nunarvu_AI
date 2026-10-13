@@ -7,6 +7,8 @@ drf-spectacular==0.26.5
 whitenoise==6.6.0
 gunicorn==21.2.0
 psycopg2-binary==2.9.9
+cryptography>=42
+onnxruntime>=1.20   # or onnxruntime-gpu on a machine with CUDA
 
 # Legacy vision pipeline (app1, behaviour); replaced in Phases 2-4
 numpy==1.26.4

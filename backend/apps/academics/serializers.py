@@ -41,12 +41,13 @@ class RoomSerializer(serializers.ModelSerializer):
 
 class StudentSerializer(serializers.ModelSerializer):
     class_groups = serializers.PrimaryKeyRelatedField(many=True, queryset=ClassGroup.objects.all(), required=False)
+    face_enrollment_count = serializers.IntegerField(source='face_enrollments.count', read_only=True)
 
     class Meta:
         model = Student
         fields = [
             'id', 'roll_number', 'full_name', 'email', 'phone_number', 'is_active',
-            'consent_given', 'consent_recorded_at', 'class_groups', 'created_at',
+            'consent_given', 'consent_recorded_at', 'class_groups', 'face_enrollment_count', 'created_at',
         ]
         read_only_fields = ['consent_recorded_at', 'created_at']
 
@@ -73,6 +74,9 @@ class StudentSerializer(serializers.ModelSerializer):
         instance.save()
         if class_groups is not None:
             instance.class_groups.set(class_groups)
+        if not instance.consent_given:
+            # Withdrawing consent removes the student's stored face data.
+            instance.face_enrollments.all().delete()
         return instance
 
 

@@ -48,7 +48,8 @@ export async function api<T>(path: string, options: { method?: string; body?: un
   if (method !== 'GET') {
     headers['X-CSRFToken'] = await csrfToken()
   }
-  if (options.body !== undefined) {
+  const isForm = options.body instanceof FormData
+  if (options.body !== undefined && !isForm) {
     headers['Content-Type'] = 'application/json'
   }
 
@@ -58,7 +59,7 @@ export async function api<T>(path: string, options: { method?: string; body?: un
       method,
       headers,
       credentials: 'same-origin',
-      body: options.body === undefined ? undefined : JSON.stringify(options.body),
+      body: options.body === undefined ? undefined : isForm ? (options.body as FormData) : JSON.stringify(options.body),
     })
   } catch {
     throw new ApiError(0, 'Cannot reach the server. Check that the backend is running.')
@@ -79,4 +80,11 @@ export async function api<T>(path: string, options: { method?: string; body?: un
 export interface Page<T> {
   count: number
   results: T[]
+}
+
+/** Fetch a whole list in one request (up to the server's 200-row page limit). */
+export async function apiList<T>(path: string): Promise<T[]> {
+  const joiner = path.includes('?') ? '&' : '?'
+  const page = await api<Page<T>>(`${path}${joiner}page_size=200`)
+  return page.results
 }

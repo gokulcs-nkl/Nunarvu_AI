@@ -40,3 +40,40 @@ class AttendanceRecord(models.Model):
 
     def __str__(self):
         return f"{self.student} - {self.session}: {self.status}"
+
+
+class FaceEnrollment(models.Model):
+    """
+    One enrolled face embedding for a student. Only the encrypted embedding is kept;
+    the photo it was computed from is never stored.
+    """
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='face_enrollments')
+    embedding = models.BinaryField(help_text="Encrypted embedding vector")
+    model_name = models.CharField(max_length=100, help_text="Model that produced the embedding")
+    detection_score = models.FloatField(help_text="Detector confidence for the enrolment capture (0-1)")
+    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['student', 'created_at']
+
+    def __str__(self):
+        return f"Face enrolment #{self.pk} for {self.student}"
+
+
+class PresenceWindow(models.Model):
+    """Confirmed sightings of a student within one fixed time window of a session."""
+    session = models.ForeignKey(ClassSession, on_delete=models.CASCADE, related_name='presence_windows')
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='presence_windows')
+    window_index = models.PositiveSmallIntegerField()
+    sightings = models.PositiveIntegerField(default=0)
+    best_score = models.FloatField(default=0.0)
+    first_seen_at = models.DateTimeField()
+
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(fields=['session', 'student', 'window_index'], name='uniq_presence_session_student_window'),
+        ]
+
+    def __str__(self):
+        return f"{self.student} seen x{self.sightings} in window {self.window_index} of {self.session}"
