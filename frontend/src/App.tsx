@@ -10,6 +10,7 @@ import { Landing } from './pages/Landing'
 import { Login } from './pages/Login'
 import { Observations } from './pages/Observations'
 import { Overview } from './pages/Overview'
+import { Privacy } from './pages/Privacy'
 import { PeriodSettings } from './pages/PeriodSettings'
 import { Reports } from './pages/Reports'
 import { SessionDetail } from './pages/SessionDetail'
@@ -61,6 +62,7 @@ export default function App() {
           <Route path="observations" element={<Observations />} />
           <Route path="reports" element={<Reports />} />
           <Route path="insights" element={<Forecast />} />
+          <Route path="privacy" element={<Privacy />} />
           <Route path="cameras" element={<Cameras />} />
           <Route path="setup" element={<Setup />} />
           <Route path="timetable" element={<Timetable />} />

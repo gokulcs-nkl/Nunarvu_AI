@@ -61,9 +61,13 @@ class Student(models.Model):
     email = models.EmailField(blank=True)
     phone_number = models.CharField(max_length=20, blank=True)
     is_active = models.BooleanField(default=True)
+    date_of_birth = models.DateField(null=True, blank=True, help_text="Used only to tell whether the student is a minor under the DPDP Act")
+    guardian_name = models.CharField(max_length=255, blank=True)
+    guardian_contact = models.CharField(max_length=255, blank=True, help_text="Guardian email or phone, for a minor's consent and notices")
     # Face enrolment is only permitted once consent is recorded.
     consent_given = models.BooleanField(default=False)
     consent_recorded_at = models.DateTimeField(null=True, blank=True)
+    consent_withdrawn_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     class_groups = models.ManyToManyField(ClassGroup, through='Enrollment', related_name='students')
 
@@ -257,3 +261,56 @@ class Term(models.Model):
 
         day = day or timezone.localdate()
         return cls.objects.filter(start_date__lte=day, end_date__gte=day).first()
+
+
+class ConsentRecord(models.Model):
+    """
+    An entry in a student's consent history. The DPDP Act, 2023 requires consent to be specific
+    to a purpose and withdrawable, so every grant and withdrawal is kept, never overwritten.
+    """
+
+    class Action(models.TextChoices):
+        GRANTED = 'granted', 'Consent granted'
+        WITHDRAWN = 'withdrawn', 'Consent withdrawn'
+
+    student = models.ForeignKey(Student, on_delete=models.CASCADE, related_name='consent_records')
+    action = models.CharField(max_length=20, choices=Action.choices)
+    purpose = models.CharField(max_length=255, default='Attendance from classroom camera and related observations')
+    given_by = models.CharField(max_length=255, blank=True, help_text="Who gave or withdrew it, e.g. the student or a named guardian")
+    recorded_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    note = models.CharField(max_length=500, blank=True)
+    at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-at']
+
+    def __str__(self):
+        return f"{self.student.roll_number} {self.action} at {self.at:%Y-%m-%d}"
+
+
+class PrivacySettings(models.Model):
+    """How long data is kept and whether faces without consent are hidden. One row."""
+    face_retention_days = models.PositiveIntegerField(
+        default=365, help_text="Delete a face enrolment this many days after it was made; 0 keeps it indefinitely",
+    )
+    attendance_retention_days = models.PositiveIntegerField(
+        default=1825, help_text="Delete attendance records older than this many days; 0 keeps them indefinitely",
+    )
+    event_retention_days = models.PositiveIntegerField(
+        default=180, help_text="Delete classroom observations older than this many days; 0 keeps them indefinitely",
+    )
+    blur_unconsented = models.BooleanField(
+        default=True, help_text="Hide the faces of people who are not enrolled with consent in the live view and snapshots",
+    )
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        verbose_name_plural = 'privacy settings'
+
+    def __str__(self):
+        return 'Privacy settings'
+
+    @classmethod
+    def load(cls):
+        instance, _ = cls.objects.get_or_create(pk=1)
+        return instance

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { Camera, Pencil, Plus, X } from 'lucide-react'
+import { Camera, Download, Pencil, Plus, Trash2, X } from 'lucide-react'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
 import { useSearchParams } from 'react-router-dom'
@@ -15,8 +15,8 @@ import type { CameraDevice, ClassGroup, Student } from '../lib/types'
 const TARGET_CAPTURES = 5
 const errorText = (error: unknown) => (error instanceof ApiError ? error.message : 'Something went wrong.')
 
-type Draft = Pick<Student, 'roll_number' | 'full_name' | 'email' | 'phone_number' | 'consent_given' | 'class_groups'>
-const EMPTY: Draft = { roll_number: '', full_name: '', email: '', phone_number: '', consent_given: false, class_groups: [] }
+type Draft = Pick<Student, 'roll_number' | 'full_name' | 'email' | 'phone_number' | 'date_of_birth' | 'guardian_name' | 'guardian_contact' | 'consent_given' | 'class_groups'>
+const EMPTY: Draft = { roll_number: '', full_name: '', email: '', phone_number: '', date_of_birth: null, guardian_name: '', guardian_contact: '', consent_given: false, class_groups: [] }
 
 function StudentForm({ student, classes, onDone }: { student: Student | null; classes: ClassGroup[]; onDone: () => void }) {
   const queryClient = useQueryClient()
@@ -97,6 +97,20 @@ function StudentForm({ student, classes, onDone }: { student: Student | null; cl
             ))}
           </div>
         </fieldset>
+        <div>
+          <label htmlFor="dob" className="mb-1 block text-sm font-medium">
+            Date of birth (optional)
+          </label>
+          <Input id="dob" type="date" value={draft.date_of_birth ?? ''} onChange={(event) => set('date_of_birth', event.target.value || null)} />
+          <p className="mt-1 text-xs text-muted">Used only to tell whether the student is a minor under the DPDP Act.</p>
+        </div>
+        <div>
+          <label htmlFor="guardian" className="mb-1 block text-sm font-medium">
+            Guardian contact (for a minor)
+          </label>
+          <Input id="guardian" value={draft.guardian_contact} onChange={(event) => set('guardian_contact', event.target.value)} placeholder="Guardian email or phone" />
+          <Input className="mt-2" value={draft.guardian_name} onChange={(event) => set('guardian_name', event.target.value)} placeholder="Guardian name" />
+        </div>
         <div className="sm:col-span-2">
           <label className="flex items-start gap-2 text-sm">
             <input
@@ -290,6 +304,12 @@ export function Students() {
   }
   const [editing, setEditing] = useState<Student | 'new' | null>(null)
   const [enrolling, setEnrolling] = useState<Student | null>(null)
+  const queryClient = useQueryClient()
+  const erase = useMutation({
+    mutationFn: ({ id, confirm }: { id: number; confirm: string }) =>
+      api<void>(`/students/${id}/erase/`, { method: 'POST', body: { confirm } }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['students'] }),
+  })
 
   const classes = useQuery({ queryKey: ['class-groups'], queryFn: () => apiList<ClassGroup>('/class-groups/') })
   const students = useQuery({
@@ -410,6 +430,29 @@ export function Students() {
                             }}
                           >
                             <Pencil size={16} aria-hidden="true" />
+                          </Button>
+                        )}
+                        <a
+                          className="key inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-line bg-raised px-3 text-sm font-semibold hover:border-muted/60"
+                          href={`/api/v1/students/${student.id}/export_data/`}
+                          title="Download everything held about this student"
+                          aria-label={`Export data for ${student.full_name}`}
+                        >
+                          <Download size={16} aria-hidden="true" />
+                        </a>
+                        {isAdmin && (
+                          <Button
+                            variant="danger"
+                            aria-label={`Erase ${student.full_name}`}
+                            disabled={erase.isPending}
+                            onClick={() => {
+                              const confirm = window.prompt(
+                                `This permanently erases ${student.full_name} and all their data. Type the roll number (${student.roll_number}) to confirm.`,
+                              )
+                              if (confirm) erase.mutate({ id: student.id, confirm })
+                            }}
+                          >
+                            <Trash2 size={16} aria-hidden="true" />
                           </Button>
                         )}
                       </div>

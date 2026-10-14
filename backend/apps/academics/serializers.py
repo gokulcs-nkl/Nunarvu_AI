@@ -4,6 +4,8 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
 from .models import (
+    ConsentRecord,
+    PrivacySettings,
     Term,
     ClassGroup, ClassSession, Enrollment, Holiday, Period, Room, Student, Subject, Teacher, TimetableEntry,
 )
@@ -43,14 +45,22 @@ class RoomSerializer(serializers.ModelSerializer):
 class StudentSerializer(serializers.ModelSerializer):
     class_groups = serializers.PrimaryKeyRelatedField(many=True, queryset=ClassGroup.objects.all(), required=False)
     face_enrollment_count = serializers.SerializerMethodField()
+    is_minor = serializers.SerializerMethodField()
 
     class Meta:
         model = Student
         fields = [
             'id', 'roll_number', 'full_name', 'email', 'phone_number', 'is_active',
-            'consent_given', 'consent_recorded_at', 'class_groups', 'face_enrollment_count', 'created_at',
+            'date_of_birth', 'guardian_name', 'guardian_contact',
+            'consent_given', 'consent_recorded_at', 'consent_withdrawn_at', 'is_minor',
+            'class_groups', 'face_enrollment_count', 'created_at',
         ]
-        read_only_fields = ['consent_recorded_at', 'created_at']
+        read_only_fields = ['consent_recorded_at', 'consent_withdrawn_at', 'created_at']
+
+    def get_is_minor(self, student) -> bool | None:
+        from .privacy import is_minor
+
+        return is_minor(student)
 
     def get_face_enrollment_count(self, student) -> int:
         """Captures usable with the face model currently configured."""
@@ -187,4 +197,24 @@ class ClassSessionSerializer(serializers.ModelSerializer):
                 duplicate = duplicate.exclude(pk=self.instance.pk)
             if duplicate.exists():
                 raise serializers.ValidationError({'period_number': 'This class already has a session for that period.'})
+        return attrs
+
+
+class ConsentRecordSerializer(serializers.ModelSerializer):
+    recorded_by_username = serializers.CharField(source='recorded_by.username', read_only=True, default=None)
+
+    class Meta:
+        model = ConsentRecord
+        fields = ['id', 'action', 'purpose', 'given_by', 'recorded_by_username', 'note', 'at']
+
+
+class PrivacySettingsSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = PrivacySettings
+        fields = ['face_retention_days', 'attendance_retention_days', 'event_retention_days', 'blur_unconsented', 'updated_at']
+
+    def validate(self, attrs):
+        for field, value in attrs.items():
+            if field.endswith('_days') and value > 36500:
+                raise serializers.ValidationError({field: 'Use at most 36500 days (100 years), or 0 to keep indefinitely.'})
         return attrs

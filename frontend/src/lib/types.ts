@@ -63,10 +63,42 @@ export interface Student {
   email: string
   phone_number: string
   is_active: boolean
+  date_of_birth: string | null
+  guardian_name: string
+  guardian_contact: string
   consent_given: boolean
   consent_recorded_at: string | null
+  consent_withdrawn_at: string | null
+  is_minor: boolean | null
   class_groups: number[]
   face_enrollment_count: number
+}
+
+export interface ConsentRecord {
+  id: number
+  action: 'granted' | 'withdrawn'
+  purpose: string
+  given_by: string
+  recorded_by_username: string | null
+  note: string
+  at: string
+}
+
+export interface PrivacySettings {
+  face_retention_days: number
+  attendance_retention_days: number
+  event_retention_days: number
+  blur_unconsented: boolean
+}
+
+export interface Compliance {
+  active_students: number
+  with_consent: number
+  consent_withdrawn: number
+  minors: number
+  minors_missing_guardian_contact: string[]
+  face_data_without_consent: string[]
+  retention: { face_days: number; attendance_days: number; observation_days: number; blur_unconsented: boolean }
 }
 
 export type AttendanceStatus = 'pending' | 'present' | 'late' | 'left_early' | 'absent'

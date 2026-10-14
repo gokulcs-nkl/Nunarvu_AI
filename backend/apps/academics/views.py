@@ -5,16 +5,20 @@ from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from rest_framework.views import APIView
 
 from apps.accounts.audit import AuditedModelViewSetMixin, record
 from apps.accounts.models import Role, get_role
 from apps.accounts.permissions import ADMIN_ONLY, STAFF_ROLES, RolePermission
 
 from .models import (
+    PrivacySettings,
     Term,
     ClassGroup, ClassSession, Enrollment, Holiday, Period, Room, Student, Subject, Teacher, TimetableEntry,
 )
 from .serializers import (
+    ConsentRecordSerializer,
+    PrivacySettingsSerializer,
     TermSerializer,
     ClassGroupSerializer, ClassSessionSerializer, EnrollmentSerializer, HolidaySerializer, PeriodSerializer,
     RoomSerializer, StudentSerializer, SubjectSerializer, TeacherSerializer, TimetableEntrySerializer,
@@ -69,6 +73,11 @@ class StudentViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
     permission_classes = [RolePermission]
     read_roles = STAFF_ROLES
 
+    @property
+    def write_roles(self):
+        # Teachers collect and record consent for their own students; other writes stay admin-only.
+        return STAFF_ROLES if getattr(self, 'action', None) == 'consent' else ADMIN_ONLY
+
     def get_queryset(self):
         queryset = super().get_queryset()
         user = self.request.user
@@ -81,6 +90,64 @@ class StudentViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
             term = params['search']
             queryset = queryset.filter(Q(full_name__icontains=term) | Q(roll_number__icontains=term))
         return queryset
+
+    @action(detail=True, methods=['get'])
+    def export_data(self, request, pk=None):
+        """Download everything held about this student (the DPDP right of access)."""
+        from django.http import JsonResponse
+
+        from .privacy import export_student_data
+
+        student = self.get_object()
+        data = export_student_data(student)
+        record(request, 'export_student_data', student, {'roll_number': student.roll_number})
+        response = JsonResponse(data, json_dumps_params={'indent': 2, 'default': str})
+        response['Content-Disposition'] = f'attachment; filename="student-{student.roll_number}.json"'
+        return response
+
+    @action(detail=True, methods=['post'], url_path='consent')
+    def consent(self, request, pk=None):
+        """Grant or withdraw consent, keeping the history. Body: action=granted|withdrawn, given_by, note, purpose."""
+        from .privacy import grant_consent, withdraw_consent
+
+        if get_role(request.user) not in (Role.ADMIN, Role.TEACHER):
+            return Response({'detail': 'Not allowed.'}, status=status.HTTP_403_FORBIDDEN)
+        student = self.get_object()
+        action_name = request.data.get('action')
+        given_by = request.data.get('given_by', '')
+        note = request.data.get('note', '')
+        if action_name == 'granted':
+            grant_consent(student, given_by=given_by, recorded_by=request.user,
+                          purpose=request.data.get('purpose', ''), note=note)
+            result = {'consent_given': True}
+        elif action_name == 'withdrawn':
+            result = withdraw_consent(student, given_by=given_by, recorded_by=request.user, note=note)
+            result['consent_given'] = False
+        else:
+            return Response({'action': 'Use granted or withdrawn.'}, status=status.HTTP_400_BAD_REQUEST)
+        record(request, f'consent_{action_name}', student, {'roll_number': student.roll_number, 'given_by': given_by})
+        return Response(result)
+
+    @action(detail=True, methods=['get'])
+    def consent_history(self, request, pk=None):
+        student = self.get_object()
+        return Response(ConsentRecordSerializer(student.consent_records.all(), many=True).data)
+
+    @action(detail=True, methods=['post'])
+    def erase(self, request, pk=None):
+        """Erase the student and all their personal data. Administrators only; cannot be undone."""
+        from .privacy import erase_student
+
+        if get_role(request.user) != Role.ADMIN:
+            return Response({'detail': 'Only administrators can erase a student.'}, status=status.HTTP_403_FORBIDDEN)
+        student = self.get_object()
+        roll = student.roll_number
+        if request.data.get('confirm') != roll:
+            return Response({'confirm': f'Type the roll number ({roll}) to confirm erasure.'}, status=status.HTTP_400_BAD_REQUEST)
+        removed = erase_student(student)
+        # The student row is gone, so audit against the request user with the details.
+        record(request, 'erase_student', request.user, removed)
+        return Response({'erased': True, 'removed': removed})
 
 
 class EnrollmentViewSet(viewsets.ModelViewSet):
@@ -224,3 +291,44 @@ class ClassSessionViewSet(viewsets.ModelViewSet):
         absent = finalize_session(session)
         record(request, 'close_session', session, {'marked_absent': absent})
         return Response(self.get_serializer(session).data)
+
+
+class ComplianceView(APIView):
+    """DPDP compliance snapshot: consent coverage, minors without a guardian contact, retention settings."""
+    permission_classes = [RolePermission]
+    read_roles = STAFF_ROLES
+
+    def get(self, request):
+        from .privacy import compliance_summary
+
+        return Response(compliance_summary())
+
+
+class PrivacySettingsView(APIView):
+    """How long data is kept and whether unconsented faces are hidden. Staff read; administrators change."""
+    permission_classes = [RolePermission]
+    read_roles = STAFF_ROLES
+    write_roles = ADMIN_ONLY
+
+    def get(self, request):
+        return Response(PrivacySettingsSerializer(PrivacySettings.load()).data)
+
+    def put(self, request):
+        settings = PrivacySettings.load()
+        serializer = PrivacySettingsSerializer(settings, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        record(request, 'update_privacy_settings', settings, {'fields': sorted(serializer.validated_data)})
+        return Response(serializer.data)
+
+    def post(self, request):
+        """Run the retention clean-up now. Administrators only."""
+        from apps.accounts.models import Role, get_role
+
+        from .privacy import apply_retention
+
+        if get_role(request.user) != Role.ADMIN:
+            return Response({'detail': 'Only administrators can run the clean-up.'}, status=status.HTTP_403_FORBIDDEN)
+        removed = apply_retention()
+        record(request, 'apply_retention', request.user, removed)
+        return Response({'removed': removed})

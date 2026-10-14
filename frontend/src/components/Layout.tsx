@@ -4,6 +4,7 @@ import {
   CalendarClock,
   CalendarDays,
   Eye,
+  ShieldCheck,
   TrendingUp,
   GraduationCap,
   LayoutDashboard,
@@ -60,6 +61,7 @@ const NAV: { heading: string; items: NavItem[] }[] = [
     items: [
       { to: '/cameras', label: 'Cameras', icon: Video, roles: STAFF },
       { to: '/health', label: 'System health', icon: Activity, roles: STAFF },
+      { to: '/privacy', label: 'Privacy', icon: ShieldCheck, roles: STAFF },
       { to: '/users', label: 'Users', icon: UserCog, roles: ['admin'] },
     ],
   },
