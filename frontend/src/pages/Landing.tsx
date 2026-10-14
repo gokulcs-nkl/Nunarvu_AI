@@ -252,8 +252,8 @@ const PRINCIPLES = [
 
 const ROADMAP = [
   ['Measured accuracy', 'Recognition and observation accuracy measured on recorded, consented sessions, and published with the project.'],
-  ['Analytics and PDF reports', 'Attendance trends across dates, classes and subjects, with downloadable PDF reports.'],
-  ['Packaged deployment', 'One-command setup with PostgreSQL, backups and health checks.'],
+  ['Notifications', 'Email or message alerts when a camera drops or attendance needs attention. Today these appear only inside the app.'],
+  ['Whole-room cameras', 'Guidance and testing for high-resolution cameras that cover a full classroom, not only the front rows.'],
 ]
 
 const STEPS = [
@@ -402,7 +402,7 @@ export function Landing() {
               />
               <Feature
                 title="Reports from stored records"
-                text="Attendance percentages by student, filtered by class, subject and date range, with CSV export. Records still awaiting review are left out of the percentage."
+                text="Attendance trends by date, class, subject and student, with CSV and PDF export. Records still awaiting review are left out of every percentage."
                 visual={<ReportMock />}
               />
             </div>

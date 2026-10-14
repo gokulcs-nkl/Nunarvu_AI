@@ -6,6 +6,7 @@ import { api } from '../lib/api'
 import type { Page } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import type { ClassSession, Period } from '../lib/types'
+import { HealthAlerts, useSystemHealth } from './Health'
 
 const today = () => new Date().toLocaleDateString('en-CA')
 const shortTime = (value: string) => value.slice(0, 5)
@@ -43,6 +44,7 @@ export function Overview() {
     queryKey: ['sessions', date],
     queryFn: () => api<Page<ClassSession>>(`/sessions/?date=${date}`),
   })
+  const health = useSystemHealth(isStaff)
   const periods = useQuery({
     queryKey: ['periods', 'effective', date],
     queryFn: () => api<Period[]>(`/periods/effective/?date=${date}`),
@@ -51,6 +53,25 @@ export function Overview() {
   return (
     <>
       <PageHeader title="Overview" description={new Date().toLocaleDateString(undefined, { dateStyle: 'full' })} />
+
+      {health.data && health.data.alerts.length > 0 && (
+        <div className="mb-4">
+          <HealthAlerts health={health.data} />
+        </div>
+      )}
+      {health.data && health.data.pending_attendance + health.data.unreviewed_observations > 0 && (
+        <p className="mb-4 text-sm text-muted">
+          Waiting for review:{' '}
+          <Link to="/sessions" className="font-medium text-brand hover:underline">
+            {health.data.pending_attendance} attendance
+          </Link>{' '}
+          and{' '}
+          <Link to="/observations" className="font-medium text-brand hover:underline">
+            {health.data.unreviewed_observations} observations
+          </Link>
+          .
+        </p>
+      )}
 
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <Stat label="Classes" value={classes.data} />

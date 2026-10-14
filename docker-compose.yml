@@ -1,0 +1,32 @@
+# PostgreSQL for Nunarvu AI.
+#
+# The backend and the camera worker run directly on the host, because the worker needs the
+# webcam and the graphics card, which are awkward to reach from a container on Windows.
+#
+#   1. Set DB_PASSWORD in backend/.env (and the other DB_* values shown in .env.example).
+#   2. docker compose --env-file backend/.env up -d
+#   3. cd backend && python manage.py migrate
+#
+# Data lives in the "nunarvu-db" volume and survives `docker compose down`.
+
+services:
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${DB_NAME:-nunarvu}
+      POSTGRES_USER: ${DB_USER:-nunarvu}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in backend/.env}
+    ports:
+      # Reachable from this computer only.
+      - "127.0.0.1:${DB_PORT:-5432}:5432"
+    volumes:
+      - nunarvu-db:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  nunarvu-db:

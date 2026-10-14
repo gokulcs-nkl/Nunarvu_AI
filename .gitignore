@@ -44,3 +44,11 @@ backend/hub/
 
 # Downloaded model files
 backend/models/
+
+# Machine-specific path to the Python interpreter used by start_nunarvu.bat
+python_path.txt
+
+# Local evaluation data and backups: never commit photos of people or database dumps
+evaluation/
+backups/
+backend/backups/

@@ -4,6 +4,7 @@ import { Layout } from './components/Layout'
 import { EmptyState, Spinner } from './components/ui'
 import { useAuth } from './lib/auth'
 import { Cameras } from './pages/Cameras'
+import { Health } from './pages/Health'
 import { Landing } from './pages/Landing'
 import { Login } from './pages/Login'
 import { Observations } from './pages/Observations'
@@ -14,6 +15,8 @@ import { SessionDetail } from './pages/SessionDetail'
 import { Sessions } from './pages/Sessions'
 import { Setup } from './pages/Setup'
 import { Students } from './pages/Students'
+import { Timetable } from './pages/Timetable'
+import { Users } from './pages/Users'
 
 function Protected() {
   const { user, loading } = useAuth()
@@ -58,6 +61,9 @@ export default function App() {
           <Route path="reports" element={<Reports />} />
           <Route path="cameras" element={<Cameras />} />
           <Route path="setup" element={<Setup />} />
+          <Route path="timetable" element={<Timetable />} />
+          <Route path="health" element={<Health />} />
+          <Route path="users" element={<Users />} />
           <Route path="settings/periods" element={<PeriodSettings />} />
           <Route path="*" element={<NotFound />} />
         </Route>

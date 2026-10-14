@@ -29,7 +29,16 @@ class UserSerializer(serializers.ModelSerializer):
         user.set_password(password)
         user.save()
         Profile.objects.update_or_create(user=user, defaults={'role': role})
+        self._ensure_teacher(user, role)
         return user
+
+    @staticmethod
+    def _ensure_teacher(user, role) -> None:
+        if role != Role.TEACHER:
+            return
+        from apps.academics.models import Teacher
+
+        Teacher.objects.get_or_create(user=user, defaults={'employee_code': f'T-{user.pk}'})
 
     def update(self, instance, validated_data):
         role = validated_data.pop('role', None)
@@ -41,6 +50,7 @@ class UserSerializer(serializers.ModelSerializer):
         instance.save()
         if role is not None:
             Profile.objects.update_or_create(user=instance, defaults={'role': role})
+            self._ensure_teacher(instance, role)
         return instance
 
 

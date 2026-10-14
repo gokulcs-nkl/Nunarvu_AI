@@ -52,3 +52,34 @@ def generate_sessions_for_date(day: date_type) -> int:
         )
         created_count += created
     return created_count
+
+
+def run_schedule(now: datetime | None = None) -> dict:
+    """
+    Keep timetable sessions in step with the clock: create today's sessions, start the ones
+    whose period has begun and close the ones whose period is over. Sessions started by hand
+    are left alone. Safe to call as often as you like.
+    """
+    from apps.attendance.services import finalize_session
+
+    now = now or timezone.now()
+    created = generate_sessions_for_date(timezone.localtime(now).date())
+    timetable = ClassSession.objects.filter(source=ClassSession.Source.TIMETABLE)
+
+    started = timetable.filter(
+        status=ClassSession.Status.SCHEDULED, starts_at__lte=now, ends_at__gt=now,
+    ).update(status=ClassSession.Status.ACTIVE)
+
+    closed = 0
+    for session in timetable.filter(status=ClassSession.Status.ACTIVE, ends_at__lte=now):
+        session.status = ClassSession.Status.CLOSED
+        session.save(update_fields=['status'])
+        finalize_session(session)
+        closed += 1
+    # A period that came and went without ever starting (the scheduler was not running) is closed
+    # without marking anyone: nobody was watching, so absence cannot be inferred.
+    for session in timetable.filter(status=ClassSession.Status.SCHEDULED, ends_at__lte=now):
+        session.status = ClassSession.Status.CLOSED
+        session.save(update_fields=['status'])
+        closed += 1
+    return {'created': created, 'started': started, 'closed': closed}

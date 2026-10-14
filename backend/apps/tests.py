@@ -322,3 +322,60 @@ class SessionAuthTests(BaseData):
         ]
         self.assertEqual(statuses[:10], [401] * 10)
         self.assertEqual(statuses[10], 429)
+
+
+class ScheduleTests(BaseData):
+    def setUp(self):
+        from datetime import datetime
+
+        from django.utils import timezone
+
+        Period.objects.create(number=1, start_time=time(9, 0), end_time=time(9, 50))
+        TimetableEntry.objects.create(
+            class_group=self.group, subject=self.maths, teacher=self.teacher, weekday=MONDAY.weekday(), period_number=1,
+        )
+        zone = timezone.get_current_timezone()
+        self.at = lambda hour, minute: timezone.make_aware(datetime.combine(MONDAY, time(hour, minute)), zone)
+
+    def run_at(self, hour, minute):
+        from apps.academics.services import run_schedule
+
+        return run_schedule(self.at(hour, minute))
+
+    def test_session_is_created_started_and_closed_by_the_clock(self):
+        self.assertEqual(self.run_at(8, 30), {'created': 1, 'started': 0, 'closed': 0})
+        session = ClassSession.objects.get()
+        self.assertEqual(session.status, 'scheduled')
+
+        self.assertEqual(self.run_at(9, 5), {'created': 0, 'started': 1, 'closed': 0})
+        AttendanceRecord.objects.create(session=session, student=self.student, status='present')
+        second = Student.objects.create(roll_number='A002', full_name='Chitra')
+        second.class_groups.add(self.group)
+
+        self.assertEqual(self.run_at(9, 50), {'created': 0, 'started': 0, 'closed': 1})
+        session.refresh_from_db()
+        self.assertEqual(session.status, 'closed')
+        self.assertEqual(AttendanceRecord.objects.get(student=second).status, 'absent')
+        self.assertEqual(self.run_at(10, 30), {'created': 0, 'started': 0, 'closed': 0})
+
+    def test_manual_sessions_are_left_alone(self):
+        manual = ClassSession.objects.create(
+            class_group=self.other_group, subject=self.maths, date=MONDAY, starts_at=self.at(7, 0),
+            ends_at=self.at(7, 30), status='active', source='manual',
+        )
+        self.run_at(12, 0)
+        manual.refresh_from_db()
+        self.assertEqual(manual.status, 'active')
+
+    def test_missed_period_is_closed_without_marking_anyone(self):
+        self.assertEqual(self.run_at(11, 0), {'created': 1, 'started': 0, 'closed': 1})
+        self.assertEqual(AttendanceRecord.objects.count(), 0)
+
+    def test_teacher_account_gets_a_teacher_record(self):
+        client = self.client_for(self.admin)
+        created = client.post('/api/v1/users/', {'username': 'newteacher', 'password': 'a-Strong-pass-91', 'role': 'teacher'}, format='json')
+        self.assertTrue(Teacher.objects.filter(user_id=created.data['id']).exists())
+        promoted = client.patch(f'/api/v1/users/{self.viewer.id}/', {'role': 'teacher'}, format='json')
+        self.assertEqual(promoted.status_code, 200)
+        self.assertTrue(Teacher.objects.filter(user=self.viewer).exists())
+        self.assertEqual(client.delete(f'/api/v1/users/{self.admin.id}/').status_code, 400)

@@ -279,6 +279,9 @@ if not DEBUG:
     SECURE_HSTS_SECONDS = 31536000
     SECURE_HSTS_INCLUDE_SUBDOMAINS = True
     SECURE_HSTS_PRELOAD = True
+    # Send the session and CSRF cookies over HTTPS only. Set SECURE_COOKIES=False only for a
+    # non-debug run on plain http://localhost.
+    SESSION_COOKIE_SECURE = CSRF_COOKIE_SECURE = get_env_variable('SECURE_COOKIES', 'True').lower() in ('true', '1', 'yes')
 
 # ---------------------------------------------------------------------------
 # Face recognition and attendance rules

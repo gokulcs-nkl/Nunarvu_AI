@@ -183,3 +183,76 @@ export const STATUS_LABEL: Record<AttendanceStatus, string> = {
   left_early: 'Left early',
   absent: 'Absent',
 }
+
+export interface TeacherProfile {
+  id: number
+  user: number
+  name: string
+  employee_code: string
+}
+
+export interface TimetableEntry {
+  id: number
+  class_group: number
+  subject: number
+  teacher: number | null
+  room: number | null
+  weekday: number
+  period_number: number
+}
+
+interface BreakdownRow {
+  id: number
+  name: string
+  sessions: number
+  attended: number
+  decided: number
+  percent: number | null
+}
+
+export interface ReportSummary {
+  totals: {
+    records: number
+    sessions: number
+    students: number
+    present: number
+    late: number
+    left_early: number
+    absent: number
+    pending: number
+    attendance_percent: number | null
+  }
+  by_date: { date: string; attended: number; decided: number; percent: number | null }[]
+  by_class: BreakdownRow[]
+  by_subject: BreakdownRow[]
+}
+
+export interface ObservationSummaryRow {
+  kind: string
+  label: string
+  total: number
+  unreviewed: number
+  confirmed: number
+  dismissed: number
+}
+
+export interface SystemHealth {
+  window_hours: number
+  cameras: {
+    id: number
+    name: string
+    room: string | null
+    is_enabled: boolean
+    status: 'online' | 'offline' | 'error'
+    last_error: string
+    fps: number | null
+    latency_ms: number | null
+    uptime_percent: number
+    last_change: { status: 'online' | 'offline' | 'error'; detail: string; at: string } | null
+  }[]
+  alerts: { camera: number; message: string }[]
+  pending_attendance: number
+  unreviewed_observations: number
+  students: { active: number; with_consent: number; enrolled_faces: number }
+  models: { face: string; pose: string; objects: string }
+}

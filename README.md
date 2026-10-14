@@ -13,10 +13,13 @@ teacher-reviewed classroom observations, built with Django and React.
 | 2 | Consent-based face enrolment, attendance from the camera, teacher review, attendance report | Done |
 | 3 | Background camera worker, IP cameras, live view over WebSocket, camera management | Done |
 | 4 | Classroom observations (hand raise, head-down posture, phone-like object, unusual activity) with teacher review | Done, not yet evaluated |
-| 5+ | Analytics, PDF export, deployment | Not started |
+| 5 | Analytics: attendance by date, class, subject and student; observation counts; PDF and CSV export | Done |
+| 6 | Timetable screen with automatic session start and end, user management, system health and in-app alerts | Done |
+| 7 | Evaluation, benchmark and backup tools; PostgreSQL compose file; demonstration and evaluation guides | Tools done; measurements not yet run; PostgreSQL untested |
 
 Recognition accuracy has not been evaluated yet; the match thresholds are
-starting values. Inference currently runs on CPU. The earlier prototype lives
+starting values. See `docs/EVALUATION.md` for how to measure it and
+`docs/DEMO.md` for a demonstration walkthrough. The earlier prototype lives
 in `backend/app1`, `backend/behaviour` and `legacy_frontend` until it is replaced.
 
 ## Layout
@@ -34,6 +37,7 @@ backend/
   app1/, behaviour/  Earlier prototype (being replaced)
 frontend/            React + TypeScript web app (Vite, Tailwind)
 legacy_frontend/     Django templates used by the earlier prototype
+docs/                Demonstration and evaluation guides; archive/ holds the prototype's old notes
 ```
 
 ## Run it
@@ -109,8 +113,13 @@ Timings are optional. An administrator can set a default schedule, override it
 for any weekday, and override it again for one calendar date. The most specific
 match applies. With no timings, teachers start and close sessions manually.
 
+Put subjects into periods on the Timetable page. While the camera worker is
+running it creates each day's sessions, starts each one when its period begins
+and ends it when the period is over, marking unseen students absent. Sessions
+started by hand are never ended automatically.
+
 ```bash
-python manage.py generate_sessions            # create today's sessions from the timetable
+python manage.py generate_sessions            # create today's sessions without the worker
 python manage.py generate_sessions --date 2026-10-19
 ```
 
@@ -148,6 +157,31 @@ These rules use pretrained models (YOLO11n-pose and YOLO11n) and fixed
 thresholds. Their precision and recall have not been measured yet, and the
 phone and unusual-activity observations in particular should be expected to
 miss cases and raise false alarms.
+
+## Tools
+
+```bash
+python manage.py evaluate_faces <folder> --csv out.csv   # recognition error rates on your own labelled photos
+python manage.py benchmark_models --image photo.jpg      # time per frame for each model on this computer
+python manage.py backup_data --out backups               # compressed backup; restore with loaddata
+```
+
+`start_nunarvu.bat` starts the backend, the camera worker and the web app in
+three windows. To use a particular Python (for example a virtual environment
+with GPU packages), put its full path in a file named `python_path.txt` next to
+the script.
+
+## PostgreSQL
+
+SQLite is the default and needs no setup. For PostgreSQL, set the `DB_*` values
+in `backend/.env`, then:
+
+```bash
+docker compose --env-file backend/.env up -d
+cd backend && python manage.py migrate
+```
+
+This path has not been tested on the development machine.
 
 ## API and tests
 

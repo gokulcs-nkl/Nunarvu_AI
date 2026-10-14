@@ -189,23 +189,16 @@ class RecognizeView(APIView):
 class AttendanceReportView(APIView):
     """
     Attendance totals per student from stored records.
-    Filters: class_group, subject, student, date_from, date_to. Add `?export=csv` to download.
+    Filters: class_group, subject, teacher, student, date_from, date_to. Add `?export=csv` or `?export=pdf` to download.
     """
     permission_classes = [RolePermission]
     read_roles = STAFF_ROLES
 
     def get(self, request):
-        records = AttendanceRecord.objects.all()
-        if get_role(request.user) == Role.TEACHER:
-            records = records.filter(session__teacher__user=request.user)
+        from .analytics import pdf_response, scoped_records
+
+        records = scoped_records(request)
         params = request.query_params
-        filters = {
-            'class_group': 'session__class_group', 'subject': 'session__subject', 'student': 'student',
-            'date_from': 'session__date__gte', 'date_to': 'session__date__lte',
-        }
-        for param, lookup in filters.items():
-            if params.get(param):
-                records = records.filter(**{lookup: params[param]})
 
         def tally(value):
             return Count('id', filter=Q(status=value))
@@ -244,6 +237,8 @@ class AttendanceReportView(APIView):
                 'attendance_percent': round(100 * attended / decided, 1) if decided else None,
             })
 
+        if params.get('export') == 'pdf':
+            return pdf_response(request, report)
         if params.get('export') == 'csv':
             response = HttpResponse(content_type='text/csv')
             response['Content-Disposition'] = 'attachment; filename="attendance_report.csv"'
@@ -252,6 +247,6 @@ class AttendanceReportView(APIView):
             writer.writerow(['Roll number', 'Name', 'Sessions', 'Present', 'Late', 'Left early', 'Absent', 'Pending review', 'Attendance %'])
             for row in report:
                 writer.writerow(['' if row[column] is None else row[column] for column in columns])
-            record(request, 'export_attendance_report', request.user, {'rows': len(report), 'filters': dict(params.items())})
+            record(request, 'export_attendance_report', request.user, {'rows': len(report), 'format': 'csv', 'filters': dict(params.items())})
             return response
         return Response(report)

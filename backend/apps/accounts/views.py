@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from rest_framework import viewsets
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.exceptions import ValidationError
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
@@ -19,6 +20,11 @@ class UserViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
     permission_classes = [RolePermission]
     read_roles = ADMIN_ONLY
     write_roles = ADMIN_ONLY
+
+    def perform_destroy(self, instance):
+        if instance.pk == self.request.user.pk:
+            raise ValidationError('You cannot delete your own account.')
+        super().perform_destroy(instance)
 
 
 class AuditLogViewSet(viewsets.ReadOnlyModelViewSet):

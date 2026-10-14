@@ -3,7 +3,7 @@ from rest_framework.routers import DefaultRouter
 
 from apps.academics import views as academics
 from apps.accounts import auth_views, views as accounts
-from apps.attendance import face_views, views as attendance
+from apps.attendance import analytics, face_views, views as attendance
 from apps.monitoring import views as monitoring
 
 router = DefaultRouter()
@@ -32,6 +32,9 @@ urlpatterns = [
     path('students/<int:pk>/face-enrollments/', face_views.FaceEnrollmentView.as_view(), name='v1-face-enrollments'),
     path('sessions/<int:pk>/recognize/', face_views.RecognizeView.as_view(), name='v1-recognize'),
     path('reports/attendance/', face_views.AttendanceReportView.as_view(), name='v1-attendance-report'),
+    path('reports/summary/', analytics.AttendanceSummaryView.as_view(), name='v1-attendance-summary'),
+    path('reports/observations/', analytics.ObservationSummaryView.as_view(), name='v1-observation-summary'),
+    path('system/health/', analytics.SystemHealthView.as_view(), name='v1-system-health'),
     path('settings/observations/', monitoring.ObservationSettingsView.as_view(), name='v1-observation-settings'),
     path('cameras/<int:pk>/snapshot/', monitoring.CameraSnapshotView.as_view(), name='v1-camera-snapshot'),
     path('cameras/<int:pk>/test/', monitoring.CameraTestView.as_view(), name='v1-camera-test'),

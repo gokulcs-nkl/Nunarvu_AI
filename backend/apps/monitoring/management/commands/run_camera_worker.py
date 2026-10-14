@@ -6,6 +6,7 @@ from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 from django.db import close_old_connections
 
+from apps.academics.services import run_schedule
 from apps.monitoring.models import Camera
 from apps.monitoring.worker import CameraWorker, HttpPublisher, NullPublisher
 from vision.behavior.detectors import BehaviorModelsNotAvailable, PhoneDetector, PoseEstimator
@@ -18,6 +19,7 @@ class Command(BaseCommand):
     help = (
         "Run the camera worker. It reads every enabled camera (or only --camera IDs), records "
         "attendance for the active session in each camera's room, and feeds the live view. "
+        "It also starts and ends timetable sessions at their period times. "
         "Stop it with Ctrl+C."
     )
 
@@ -74,6 +76,11 @@ class Command(BaseCommand):
                         threads[camera.id].start()
                 if not threads:
                     self.stdout.write("No enabled cameras yet; waiting.")
+                # Start and end timetable sessions on time, so attendance follows the periods by itself.
+                changes = run_schedule()
+                if any(changes.values()):
+                    self.stdout.write(f"Timetable: {changes['created']} created, {changes['started']} started, {changes['closed']} closed")
+                    self.stdout.flush()
                 close_old_connections()
                 time.sleep(RESCAN_SECONDS)
         except KeyboardInterrupt:
