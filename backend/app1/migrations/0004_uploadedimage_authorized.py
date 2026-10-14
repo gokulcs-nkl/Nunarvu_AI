@@ -9,10 +9,7 @@ class Migration(migrations.Migration):
         ('app1', '0003_delete_visitor'),
     ]
 
-    operations = [
-        migrations.AddField(
-            model_name='uploadedimage',
-            name='authorized',
-            field=models.BooleanField(default=False),
-        ),
-    ]
+    # 0001_initial was edited after it had been applied and already creates this column, so
+    # adding it again here broke every fresh database (PostgreSQL refuses a duplicate column).
+    # Kept as an empty step so databases that recorded it stay consistent.
+    operations = []

@@ -52,3 +52,5 @@ python_path.txt
 evaluation/
 backups/
 backend/backups/
+# Machine-specific start-up steps run by start_nunarvu.bat
+local_start.bat

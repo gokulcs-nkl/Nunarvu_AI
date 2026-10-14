@@ -196,15 +196,20 @@ to send real email.
 
 ## PostgreSQL
 
-SQLite is the default and needs no setup. For PostgreSQL, set the `DB_*` values
-in `backend/.env`, then:
+SQLite is the default and needs no setup. To use PostgreSQL, set the `DB_*` values in
+`backend/.env` (see `.env.example`), create the tables, and copy any existing SQLite data:
 
 ```bash
-docker compose --env-file backend/.env up -d
-cd backend && python manage.py migrate
+cd backend
+python manage.py migrate
+python manage.py copy_from_sqlite db.sqlite3   # reads SQLite, checks every table's row count
 ```
 
-This path has not been tested on the development machine.
+PostgreSQL can run in Docker (`docker compose --env-file backend/.env up -d`, using the same
+`DB_*` values) or as a local install. Only one of them can use port 5432 at a time.
+
+`start_nunarvu.bat` runs `local_start.bat` first if it exists (it is not committed), which is the
+place to start a local PostgreSQL.
 
 ## API and tests
 
