@@ -38,7 +38,7 @@ function Stat({ label, value, to }: { label: string; value: number; to?: string 
       <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
     </>
   )
-  const className = 'block rounded-lg border border-line bg-surface px-4 py-3'
+  const className = 'block panel rounded-2xl px-4 py-3'
   return to ? (
     <Link to={to} className={`${className} hover:border-brand`}>
       {body}

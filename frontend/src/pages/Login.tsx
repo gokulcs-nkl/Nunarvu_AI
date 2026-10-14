@@ -35,7 +35,7 @@ export function Login() {
 
   return (
     <div className="flex min-h-full items-center justify-center px-4 py-10">
-      <form onSubmit={handleSubmit} className="w-full max-w-sm rounded-lg border border-line bg-surface p-6">
+      <form onSubmit={handleSubmit} className="panel w-full max-w-sm rounded-3xl p-7">
         <Link to="/about" aria-label="About Nunarvu AI">
           <Logo size={32} />
         </Link>

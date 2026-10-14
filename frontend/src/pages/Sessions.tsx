@@ -48,7 +48,7 @@ function NewSessionForm({ onDone }: { onDone: () => void }) {
     event.preventDefault()
     create.mutate()
   }
-  const selectClass = 'h-9 w-full rounded-md border border-line bg-surface px-2 text-sm'
+  const selectClass = 'h-9 w-full rounded-lg border border-line bg-canvas px-2 text-sm'
 
   return (
     <Card title="Start a session now">

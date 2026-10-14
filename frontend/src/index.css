@@ -1,22 +1,40 @@
 @import "tailwindcss";
 
+/*
+ * Dark theme with depth. Every colour used by components comes from these tokens,
+ * so the look is changed here and nowhere else.
+ */
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, "Segoe UI", sans-serif;
-  --color-surface: #ffffff;
-  --color-canvas: #f6f7f9;
-  --color-line: #e2e5ea;
-  --color-ink: #16202e;
-  --color-night: #0b0d12;
-  --color-muted: #5b6676;
-  --color-brand: #1f4fd8;
-  --color-brand-strong: #173fb0;
-  --color-brand-soft: #e8eefc;
-  --color-ok: #17794a;
-  --color-ok-soft: #e4f4ec;
-  --color-warn: #8a5a00;
-  --color-warn-soft: #fdf1d8;
-  --color-danger: #b3261e;
-  --color-danger-soft: #fbe9e7;
+
+  /* Surfaces, from the page floor upwards */
+  --color-night: #080b0f;
+  --color-canvas: #0d1217;
+  --color-surface: #141b22;
+  --color-raised: #1b242d;
+  --color-line: #263039;
+
+  /* Text */
+  --color-ink: #eaf0f4;
+  --color-muted: #94a3ae;
+
+  /* Accent */
+  --color-brand: #6f9bff;
+  --color-brand-strong: #a3c0ff;
+  --color-brand-soft: #1a2845;
+
+  /* States. Each is used with a label or icon, never as colour alone. */
+  --color-ok: #4ad295;
+  --color-ok-soft: #10291f;
+  --color-warn: #f2b84b;
+  --color-warn-soft: #33270c;
+  --color-danger: #ff8177;
+  --color-danger-soft: #3a1917;
+}
+
+html {
+  /* Native controls (date pickers, selects, scrollbars) follow the dark theme. */
+  color-scheme: dark;
 }
 
 html,
@@ -32,7 +50,10 @@ body,
 }
 
 body {
-  background: var(--color-canvas);
+  background:
+    radial-gradient(1200px 600px at 85% -10%, rgb(111 155 255 / 0.07), transparent 60%),
+    var(--color-canvas);
+  background-attachment: fixed;
   color: var(--color-ink);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
@@ -41,4 +62,84 @@ body {
 :focus-visible {
   outline: 2px solid var(--color-brand);
   outline-offset: 2px;
+}
+
+/*
+ * Depth. A panel is lit from above: a lighter top edge, a gradient face and a soft
+ * shadow underneath, so cards read as objects resting on the page.
+ */
+@utility panel {
+  background: linear-gradient(180deg, var(--color-raised), var(--color-surface) 70%);
+  border: 1px solid var(--color-line);
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.06),
+    0 1px 2px rgb(0 0 0 / 0.5),
+    0 18px 40px -18px rgb(0 0 0 / 0.75);
+}
+
+/* A control that sits slightly proud of its panel and presses in when clicked. */
+@utility key {
+  box-shadow:
+    inset 0 1px 0 rgb(255 255 255 / 0.14),
+    0 1px 0 rgb(0 0 0 / 0.5),
+    0 6px 14px -6px rgb(0 0 0 / 0.6);
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    background-color 120ms ease,
+    border-color 120ms ease;
+  &:active:not(:disabled) {
+    transform: translateY(1px);
+    box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.08);
+  }
+}
+
+/* Tilt: the element leans towards the pointer. Angles are set from script as CSS variables. */
+.tilt {
+  transform: perspective(900px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg));
+  transform-style: preserve-3d;
+  transition: transform 180ms ease-out;
+  will-change: transform;
+}
+
+.tilt-glare {
+  background: radial-gradient(320px circle at var(--glare-x, 50%) var(--glare-y, 0%), rgb(255 255 255 / 0.1), transparent 60%);
+  opacity: var(--glare-on, 0);
+  transition: opacity 180ms ease-out;
+}
+
+/* The stacked-layers object on the dashboard and landing page. */
+.stack3d {
+  transform-style: preserve-3d;
+  transform: rotateX(56deg) rotateZ(-38deg);
+}
+
+.stack3d > * {
+  position: absolute;
+  inset: 0;
+  transform: translateZ(var(--z, 0px));
+  border-radius: 14px;
+}
+
+@keyframes stack-float {
+  0%,
+  100% {
+    transform: rotateX(56deg) rotateZ(-38deg) translateZ(0);
+  }
+  50% {
+    transform: rotateX(56deg) rotateZ(-38deg) translateZ(10px);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .stack3d {
+    animation: stack-float 7s ease-in-out infinite;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tilt {
+    transform: none;
+    transition: none;
+  }
 }

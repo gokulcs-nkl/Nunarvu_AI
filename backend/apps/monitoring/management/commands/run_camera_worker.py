@@ -38,9 +38,10 @@ class Command(BaseCommand):
         pose = phones = None
         if not options['no_observations']:
             try:
-                pose = PoseEstimator(settings.BEHAVIOR_POSE_MODEL)
-                phones = PhoneDetector(settings.BEHAVIOR_OBJECT_MODEL)
-                self.stdout.write("Classroom observations: on")
+                device = None if settings.BEHAVIOR_DEVICE == 'auto' else settings.BEHAVIOR_DEVICE
+                pose = PoseEstimator(settings.BEHAVIOR_POSE_MODEL, device=device)
+                phones = PhoneDetector(settings.BEHAVIOR_OBJECT_MODEL, device=device)
+                self.stdout.write(f"Classroom observations: on ({settings.BEHAVIOR_DEVICE})")
                 self.stdout.flush()
             except BehaviorModelsNotAvailable as error:
                 self.stdout.write(self.style.WARNING(f"Classroom observations are off: {error}"))

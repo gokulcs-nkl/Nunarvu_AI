@@ -4,9 +4,9 @@ import type { RecognizedFace } from '../lib/types'
 
 // Colour is paired with a text label on every box, so it never carries meaning alone.
 const BAND_STYLE = {
-  confirmed: { border: '#17794a', label: 'Confirmed' },
-  review: { border: '#8a5a00', label: 'Needs review' },
-  unknown: { border: '#5b6676', label: 'Unrecognised' },
+  confirmed: { border: '#4ad295', label: 'Confirmed' },
+  review: { border: '#f2b84b', label: 'Needs review' },
+  unknown: { border: '#b6c2cb', label: 'Unrecognised' },
 } as const
 
 /** A video or image with a labelled box drawn over each face. Boxes are in source-frame pixels. */
@@ -21,7 +21,7 @@ export function FaceOverlay({
 }) {
   const [width, height] = frameSize
   return (
-    <div className="relative overflow-hidden rounded-md bg-ink" style={{ aspectRatio: width && height ? `${width} / ${height}` : '16 / 9' }}>
+    <div className="relative overflow-hidden rounded-xl border border-line bg-night" style={{ aspectRatio: width && height ? `${width} / ${height}` : '16 / 9' }}>
       {children}
       {width > 0 &&
         faces.map((face, index) => {
@@ -40,7 +40,7 @@ export function FaceOverlay({
               }}
             >
               <span
-                className="absolute -top-6 left-0 whitespace-nowrap rounded px-1.5 py-0.5 text-xs font-medium text-white"
+                className="absolute -top-6 left-0 whitespace-nowrap rounded px-1.5 py-0.5 text-xs font-semibold text-night"
                 style={{ background: style.border }}
               >
                 {face.student_name ? `${face.student_name} · ${style.label}` : style.label}

@@ -68,7 +68,7 @@ function SlotForm({
     event.preventDefault()
     save.mutate()
   }
-  const selectClass = 'h-9 w-full rounded-md border border-line bg-surface px-2 text-sm'
+  const selectClass = 'h-9 w-full rounded-lg border border-line bg-canvas px-2 text-sm'
   const failure = save.error ?? remove.error
 
   return (
@@ -220,7 +220,7 @@ export function Timetable() {
             action={
               <select
                 aria-label="Class"
-                className="h-9 rounded-md border border-line bg-surface px-2 text-sm"
+                className="h-9 rounded-lg border border-line bg-canvas px-2 text-sm"
                 value={chosen}
                 onChange={(event) => {
                   setClassGroup(event.target.value)

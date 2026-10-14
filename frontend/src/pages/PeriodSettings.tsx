@@ -278,7 +278,7 @@ export function PeriodSettings() {
                   </label>
                   <select
                     id="copy-from"
-                    className="h-9 rounded-md border border-line bg-surface px-2 text-sm"
+                    className="h-9 rounded-lg border border-line bg-canvas px-2 text-sm"
                     value={copyFrom}
                     onChange={(event) => setCopyFrom(event.target.value)}
                   >

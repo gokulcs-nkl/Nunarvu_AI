@@ -2,6 +2,7 @@ import { ArrowRight, ArrowUpRight, Cpu, ScanFace } from 'lucide-react'
 import type { ReactNode } from 'react'
 import { Link } from 'react-router-dom'
 
+import { Stack3D, Tilt } from '../components/depth'
 import { Logo } from '../components/Logo'
 import { useAuth } from '../lib/auth'
 
@@ -72,7 +73,7 @@ function Roster({ rows = ROSTER }: { rows?: typeof ROSTER }) {
 
 function Browser({ children, className = '' }: { children: ReactNode; className?: string }) {
   return (
-    <div className={`overflow-hidden rounded-lg border border-black/10 bg-surface shadow-2xl ${className}`}>
+    <div className={`panel overflow-hidden rounded-xl ${className}`}>
       <div className="flex items-center gap-1.5 border-b border-line bg-canvas px-3 py-2" aria-hidden="true">
         <span className="h-2 w-2 rounded-full bg-line" />
         <span className="h-2 w-2 rounded-full bg-line" />
@@ -219,7 +220,7 @@ const buttonBase =
 
 function PrimaryLink({ to, children, onDark = false }: { to: string; children: ReactNode; onDark?: boolean }) {
   return (
-    <Link to={to} className={`${buttonBase} ${onDark ? 'bg-white text-night hover:bg-white/85' : 'bg-night text-white hover:bg-night/85'}`}>
+    <Link to={to} className={`${buttonBase} key rounded-xl ${onDark ? 'bg-white text-night hover:bg-white/85' : 'bg-brand text-night hover:bg-brand-strong'}`}>
       {children}
     </Link>
   )
@@ -236,7 +237,9 @@ function Feature({ title, text, visual, flip = false }: { title: string; text: s
         <h3 className="text-2xl font-semibold tracking-tight md:text-3xl">{title}</h3>
         <p className="mt-3 max-w-md text-base leading-relaxed text-muted">{text}</p>
       </div>
-      <div className={`bg-canvas p-6 md:p-10 ${flip ? 'md:order-1' : ''}`}>{visual}</div>
+      <Tilt className={`rounded-2xl ${flip ? 'md:order-1' : ''}`}>
+        <div className="panel rounded-2xl p-6 md:p-10">{visual}</div>
+      </Tilt>
     </div>
   )
 }
@@ -279,9 +282,9 @@ export function Landing() {
   const entryLabel = user ? 'Open dashboard' : 'Sign in'
 
   return (
-    <div className="overflow-x-clip bg-surface text-ink">
+    <div className="overflow-x-clip bg-canvas text-ink">
       {/* Hero */}
-      <header className="overflow-x-clip bg-night text-white">
+      <header className="overflow-x-clip bg-[radial-gradient(900px_500px_at_80%_0%,rgb(42_63_143/0.55),transparent_60%),var(--color-night)] text-white">
         <nav aria-label="Main" className="mx-auto flex max-w-7xl items-center justify-between gap-6 px-5 py-5 md:px-10">
           <Link to="/about" aria-label="Nunarvu AI home">
             <Logo tone="light" size={30} />
@@ -317,7 +320,12 @@ export function Landing() {
             </div>
           </div>
           <div className="relative min-w-0 pb-10 md:translate-y-10 md:pb-0">
-            <SessionMock />
+            <div className="pointer-events-none absolute -right-10 -top-28 hidden opacity-90 lg:block">
+              <Stack3D size={170} />
+            </div>
+            <Tilt className="rounded-xl">
+              <SessionMock />
+            </Tilt>
             <Phone className="absolute -right-4 bottom-0 hidden w-40 sm:block md:-bottom-6 md:-right-8 md:w-44">
               <p className="px-3 pb-1 pt-2 text-[10px] font-semibold text-ink">Today · Period 2</p>
               <Roster rows={ROSTER.slice(0, 3)} />
@@ -327,7 +335,7 @@ export function Landing() {
       </header>
 
       {/* In-page section links */}
-      <div className="sticky top-0 z-10 border-b border-line bg-surface/95 backdrop-blur">
+      <div className="sticky top-0 z-10 border-b border-line bg-canvas/90 backdrop-blur">
         <nav aria-label="Sections" className="mx-auto flex max-w-7xl gap-7 overflow-x-auto px-5 py-4 text-xs font-semibold uppercase tracking-[0.14em] text-muted md:px-10">
           {SECTIONS.map(([href, label]) => (
             <a key={href} href={href} className="whitespace-nowrap hover:text-ink">
@@ -358,7 +366,7 @@ export function Landing() {
               ['Period timings', <PeriodsMock key="p" />],
               ['Reports', <ReportMock key="r" />],
             ].map(([label, visual]) => (
-              <figure key={label as string} className="min-w-0 bg-canvas p-5">
+              <figure key={label as string} className="panel min-w-0 rounded-2xl p-5">
                 {visual}
                 <figcaption className="mt-4 text-xs font-semibold uppercase tracking-[0.14em] text-muted">{label}</figcaption>
               </figure>
@@ -410,7 +418,7 @@ export function Landing() {
         </section>
 
         {/* Privacy principles */}
-        <section id="privacy" className="scroll-mt-16 bg-canvas">
+        <section id="privacy" className="scroll-mt-16 border-y border-line bg-surface">
           <div className="mx-auto max-w-7xl px-5 py-20 md:px-10 md:py-28">
             <Eyebrow>Privacy and responsibility</Eyebrow>
             <h2 className="mt-4 max-w-3xl text-4xl font-semibold leading-[1.05] tracking-tight md:text-6xl">Designed for a room full of real people.</h2>
@@ -431,7 +439,7 @@ export function Landing() {
           <h2 className="mt-4 text-4xl font-semibold leading-[1.05] tracking-tight md:text-6xl">On the roadmap.</h2>
           <div className="mt-12 grid gap-5 md:grid-cols-3">
             {ROADMAP.map(([title, text]) => (
-              <article key={title} className="flex flex-col justify-between border border-line p-7">
+              <article key={title} className="panel flex flex-col justify-between rounded-2xl p-7">
                 <div>
                   <span className="rounded-full bg-warn-soft px-2.5 py-1 text-xs font-medium text-warn">Planned</span>
                   <h3 className="mt-5 text-xl font-semibold tracking-tight">{title}</h3>
@@ -461,7 +469,7 @@ export function Landing() {
 
         {/* Notes */}
         <section className="mx-auto grid max-w-7xl gap-5 px-5 pb-20 md:grid-cols-2 md:px-10 md:pb-28">
-          <article className="bg-canvas p-8">
+          <article className="panel rounded-2xl p-8">
             <Cpu size={24} aria-hidden="true" />
             <h3 className="mt-5 text-xl font-semibold tracking-tight">What it needs</h3>
             <p className="mt-2 text-sm leading-relaxed text-muted">
@@ -469,7 +477,7 @@ export function Landing() {
               depends on the camera: a laptop webcam covers the first few metres, and a full classroom needs a higher-resolution camera.
             </p>
           </article>
-          <article className="bg-canvas p-8">
+          <article className="panel rounded-2xl p-8">
             <ScanFace size={24} aria-hidden="true" />
             <h3 className="mt-5 text-xl font-semibold tracking-tight">What it does not claim</h3>
             <p className="mt-2 text-sm leading-relaxed text-muted">
@@ -492,7 +500,7 @@ export function Landing() {
                 href={REPO_URL}
                 target="_blank"
                 rel="noreferrer"
-                className={`${buttonBase} border border-white/40 text-white hover:border-white`}
+                className={`${buttonBase} rounded-xl border border-white/40 text-white hover:border-white`}
               >
                 View the source
               </a>

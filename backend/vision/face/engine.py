@@ -88,12 +88,7 @@ class FaceEngine:
         except ImportError as error:
             raise ModelNotAvailable("onnxruntime is not installed") from error
 
-        # The GPU build finds NVIDIA's libraries (from pip packages or PyTorch) only after this call.
-        if hasattr(ort, 'preload_dlls'):
-            try:
-                ort.preload_dlls()
-            except Exception:  # no GPU libraries present: the CPU provider is used instead
-                pass
+        # On a GPU install the NVIDIA libraries were already loaded at start-up (see vision.gpu).
         available = ort.get_available_providers()
         wanted = providers or ['CUDAExecutionProvider', 'CPUExecutionProvider']
         chosen = [name for name in wanted if name in available] or ['CPUExecutionProvider']

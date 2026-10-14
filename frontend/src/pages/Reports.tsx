@@ -9,7 +9,7 @@ import type { ClassGroup, ObservationSummaryRow, ReportRow, ReportSummary, Subje
 
 function Tile({ label, value, note }: { label: string; value: string | number; note?: string }) {
   return (
-    <div className="rounded-lg border border-line bg-surface px-4 py-3">
+    <div className="panel rounded-2xl px-4 py-3">
       <p className="text-xs text-muted">{label}</p>
       <p className="mt-1 text-2xl font-semibold tabular-nums">{value}</p>
       {note && <p className="text-xs text-muted">{note}</p>}
@@ -70,9 +70,9 @@ export function Reports() {
     queryFn: () => api<ObservationSummaryRow[]>(`/reports/observations/?${query}`),
   })
 
-  const selectClass = 'h-9 w-full rounded-md border border-line bg-surface px-2 text-sm'
+  const selectClass = 'h-9 w-full rounded-lg border border-line bg-canvas px-2 text-sm'
   const exportLink = (format: string) => `/api/v1/reports/attendance/?${query}${query ? '&' : ''}export=${format}`
-  const linkClass = 'inline-flex h-9 items-center gap-2 rounded-md border border-line bg-surface px-3 text-sm font-medium hover:bg-canvas'
+  const linkClass = 'inline-flex h-9 items-center gap-2 key rounded-lg border border-line bg-raised px-3.5 text-sm font-semibold hover:border-muted/60'
   const totals = summary.data?.totals
   const observed = observations.data?.reduce((sum, row) => sum + row.total, 0) ?? 0
 
@@ -96,7 +96,7 @@ export function Reports() {
       />
 
       {/* One filter row above everything it scopes. */}
-      <div className="mb-5 grid gap-3 rounded-lg border border-line bg-surface p-4 sm:grid-cols-2 lg:grid-cols-4">
+      <div className="mb-5 grid gap-3 panel rounded-2xl p-4 sm:grid-cols-2 lg:grid-cols-4">
         <div>
           <label htmlFor="report-class" className="mb-1 block text-xs text-muted">
             Class

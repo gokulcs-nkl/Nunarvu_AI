@@ -225,7 +225,7 @@ export function SessionDetail() {
                           <td className="py-2">
                             <select
                               aria-label={`Set status for ${row.name}`}
-                              className="h-9 rounded-md border border-line bg-surface px-2 text-sm"
+                              className="h-9 rounded-lg border border-line bg-canvas px-2 text-sm"
                               value={row.record?.status ?? ''}
                               disabled={mark.isPending}
                               onChange={(event) =>

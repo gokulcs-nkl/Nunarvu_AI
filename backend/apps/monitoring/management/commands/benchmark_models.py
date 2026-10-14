@@ -52,12 +52,13 @@ class Command(BaseCommand):
             self.stdout.write("No face in the frame, so embedding is not timed. Pass --image with a face.")
 
         try:
-            pose = PoseEstimator(settings.BEHAVIOR_POSE_MODEL)
-            phones = PhoneDetector(settings.BEHAVIOR_OBJECT_MODEL)
-            device = next(pose.model.model.parameters()).device
-            self.stdout.write(f"Pose and object models on: {device}")
+            device = None if settings.BEHAVIOR_DEVICE == 'auto' else settings.BEHAVIOR_DEVICE
+            pose = PoseEstimator(settings.BEHAVIOR_POSE_MODEL, device=device)
+            phones = PhoneDetector(settings.BEHAVIOR_OBJECT_MODEL, device=device)
             rows.append(('Body pose (per frame)', *_time(lambda: pose.detect(frame), runs)))
             rows.append(('Phone-like objects (per frame)', *_time(lambda: phones.detect(frame), runs)))
+            # The device is chosen on the first prediction, so it is read afterwards.
+            self.stdout.write(f"Pose and object models on: {pose.model.predictor.device}")
         except BehaviorModelsNotAvailable as error:
             self.stdout.write(self.style.WARNING(f"Observation models not timed: {error}"))
 

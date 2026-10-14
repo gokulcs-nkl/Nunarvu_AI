@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Camera, Pencil, Plus, X } from 'lucide-react'
 import { useState } from 'react'
 import type { FormEvent } from 'react'
+import { useSearchParams } from 'react-router-dom'
 
 import { Alert, Badge, Button, Card, EmptyState, Input, PageHeader, Spinner } from '../components/ui'
 import { api, apiList, ApiError } from '../lib/api'
@@ -198,7 +199,7 @@ function EnrollPanel({ student, onDone }: { student: Student; onDone: () => void
               </label>
               <select
                 id="enrol-source"
-                className="h-9 w-full rounded-md border border-line bg-surface px-2 text-sm"
+                className="h-9 w-full rounded-lg border border-line bg-canvas px-2 text-sm"
                 value={chosen}
                 onChange={(event) => {
                   camera.stop()
@@ -214,7 +215,7 @@ function EnrollPanel({ student, onDone }: { student: Student; onDone: () => void
               </select>
             </div>
           )}
-          <div className="aspect-video overflow-hidden rounded-md bg-ink">
+          <div className="aspect-video overflow-hidden rounded-xl border border-line bg-night">
             {workerCamera !== null ? (
               preview && <img src={preview} alt="Live camera view" className="h-full w-full object-cover" />
             ) : (
@@ -276,8 +277,17 @@ function EnrollPanel({ student, onDone }: { student: Student; onDone: () => void
 export function Students() {
   const { user } = useAuth()
   const isAdmin = user?.role === 'admin'
-  const [search, setSearch] = useState('')
+  // The search box in the top bar links here with ?search=...
+  const [searchParams] = useSearchParams()
+  const linked = searchParams.get('search') ?? ''
+  const [search, setSearch] = useState(linked)
+  const [seen, setSeen] = useState(linked)
   const [page, setPage] = useState(1)
+  if (linked !== seen) {
+    setSeen(linked)
+    setSearch(linked)
+    setPage(1)
+  }
   const [editing, setEditing] = useState<Student | 'new' | null>(null)
   const [enrolling, setEnrolling] = useState<Student | null>(null)
 

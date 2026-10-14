@@ -168,7 +168,7 @@ export function LivePanel({ sessionId, onChanged }: { sessionId: number; onChang
             Start the worker on the computer that has the camera, and this view will switch to it automatically. Run
             this in the backend folder, or double-click <code>start_nunarvu.bat</code> to start everything:
           </p>
-          <pre className="overflow-x-auto rounded-md bg-canvas px-3 py-2 text-xs">python manage.py run_camera_worker</pre>
+          <pre className="overflow-x-auto rounded-md border border-line bg-night px-3 py-2 text-xs">python manage.py run_camera_worker</pre>
           <p className="text-muted">
             The worker serves the active session in its camera's room. A camera with no room serves sessions with no room.
           </p>

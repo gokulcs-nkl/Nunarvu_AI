@@ -98,7 +98,7 @@ function UserForm({ account, onDone }: { account: User | null; onDone: () => voi
           </label>
           <select
             id="user-role"
-            className="h-9 w-full max-w-xs rounded-md border border-line bg-surface px-2 text-sm"
+            className="h-9 w-full max-w-xs rounded-lg border border-line bg-canvas px-2 text-sm"
             value={role}
             onChange={(event) => setRole(event.target.value as Role)}
           >

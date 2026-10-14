@@ -31,15 +31,16 @@ def _load(path: Path):
 class PoseEstimator:
     """Finds people and their 17 body keypoints in a frame."""
 
-    def __init__(self, model_path: Path, min_score: float = 0.4, image_size: int = 640):
+    def __init__(self, model_path: Path, min_score: float = 0.4, image_size: int = 640, device: str | None = None):
         self.model = _load(model_path)
+        self.device = device  # None lets Ultralytics choose: the graphics card when there is one
         self.min_score = min_score
         self.image_size = image_size
 
     def detect(self, frame: np.ndarray) -> list[tuple[tuple[int, int, int, int], np.ndarray, np.ndarray]]:
         """Returns (box, keypoints 17x2, keypoint confidences 17) for each person."""
         with _predict_lock:
-            result = self.model.predict(frame, verbose=False, imgsz=self.image_size, conf=self.min_score)[0]
+            result = self.model.predict(frame, verbose=False, imgsz=self.image_size, conf=self.min_score, device=self.device)[0]
         if result.keypoints is None or result.boxes is None or len(result.boxes) == 0:
             return []
         boxes = result.boxes.xyxy.cpu().numpy()
@@ -55,8 +56,9 @@ class PoseEstimator:
 class PhoneDetector:
     """Finds phone-like objects. Small or partly hidden phones are often missed."""
 
-    def __init__(self, model_path: Path, min_score: float = 0.35, image_size: int = 640):
+    def __init__(self, model_path: Path, min_score: float = 0.35, image_size: int = 640, device: str | None = None):
         self.model = _load(model_path)
+        self.device = device
         self.min_score = min_score
         self.image_size = image_size
 
@@ -64,7 +66,7 @@ class PhoneDetector:
         """Returns (x1, y1, x2, y2, score) for each phone-like object."""
         with _predict_lock:
             result = self.model.predict(
-                frame, verbose=False, imgsz=self.image_size, conf=self.min_score, classes=[COCO_CELL_PHONE],
+                frame, verbose=False, imgsz=self.image_size, conf=self.min_score, classes=[COCO_CELL_PHONE], device=self.device,
             )[0]
         if result.boxes is None or len(result.boxes) == 0:
             return []

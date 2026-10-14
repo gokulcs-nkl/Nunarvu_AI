@@ -113,7 +113,7 @@ export function Observations() {
     placeholderData: (previous) => previous,
   })
   const pages = events.data ? Math.max(1, Math.ceil(events.data.count / 20)) : 1
-  const selectClass = 'h-9 rounded-md border border-line bg-surface px-2 text-sm'
+  const selectClass = 'h-9 rounded-lg border border-line bg-canvas px-2 text-sm'
 
   return (
     <>
