@@ -284,3 +284,114 @@ def pdf_response(request, rows: list[dict]) -> HttpResponse:
     record(request, 'export_attendance_report', request.user, {'rows': len(rows), 'format': 'pdf', 'filters': filters})
     return response
 
+
+
+class ForecastView(APIView):
+    """
+    Attendance shortage forecast for a term. For each student and subject it says how many of the
+    remaining classes the student must still attend to finish at or above the minimum.
+    Query: term (id, default the current term), class_group, subject, status (at_risk|cannot_reach|...).
+    Teachers see only the classes and subjects they teach.
+    """
+    permission_classes = [RolePermission]
+    read_roles = STAFF_ROLES
+
+    def get(self, request):
+        from datetime import date as date_type
+
+        from apps.academics.models import Term
+        from .forecast import AT_RISK, CANNOT_REACH, forecast as build_forecast
+
+        term_id = request.query_params.get('term')
+        if term_id:
+            if not str(term_id).isdigit():
+                raise ValidationError({'term': 'Not a valid id.'})
+            term = Term.objects.filter(pk=term_id).first()
+            if term is None:
+                raise ValidationError({'term': 'No such term.'})
+        else:
+            term = Term.current()
+            if term is None:
+                return Response({'term': None, 'detail': 'No term covers today. Create a term to see the forecast.', 'rows': []})
+
+        today = date_type.today()
+        if request.query_params.get('as_of'):
+            parsed = parse_date(request.query_params['as_of'])
+            if parsed is None:
+                raise ValidationError({'as_of': 'Use YYYY-MM-DD.'})
+            today = parsed
+
+        def ids(name):
+            value = request.query_params.get(name)
+            if not value:
+                return None
+            parts = [part for part in value.split(',') if part.strip().isdigit()]
+            if not parts:
+                raise ValidationError({name: 'Use comma-separated ids.'})
+            return [int(part) for part in parts]
+
+        teacher_user = request.user if get_role(request.user) == Role.TEACHER else None
+        rows = build_forecast(term, today, class_group_ids=ids('class_group'), subject_ids=ids('subject'), teacher_user=teacher_user)
+
+        wanted = request.query_params.get('status')
+        if wanted:
+            rows = [row for row in rows if row.status == wanted]
+
+        from .forecast import as_dicts
+        return Response({
+            'term': {'id': term.id, 'name': term.name, 'start_date': term.start_date, 'end_date': term.end_date,
+                     'minimum_attendance': term.minimum_attendance},
+            'as_of': today,
+            'counts': {
+                'at_risk': sum(1 for row in rows if row.status == AT_RISK),
+                'cannot_reach': sum(1 for row in rows if row.status == CANNOT_REACH),
+                'total': len(rows),
+            },
+            'rows': as_dicts(rows),
+        })
+
+
+class ParticipationHeatmapView(APIView):
+    """
+    Where in the room a chosen kind of observation happened, as counts on a grid. It describes the
+    room, not individuals, so no student is named. Query: kind (default hand_raise), class_group,
+    subject, date_from, date_to, grid (cells per side, 3-10, default 6).
+    """
+    permission_classes = [RolePermission]
+    read_roles = STAFF_ROLES
+
+    def get(self, request):
+        kind = request.query_params.get('kind', ClassroomEvent.Kind.HAND_RAISE)
+        if kind not in ClassroomEvent.Kind.values:
+            raise ValidationError({'kind': f'Use one of {", ".join(ClassroomEvent.Kind.values)}.'})
+        try:
+            grid = min(max(int(request.query_params.get('grid', 6)), 3), 10)
+        except ValueError:
+            raise ValidationError({'grid': 'Use a whole number.'})
+
+        events = ClassroomEvent.objects.filter(kind=kind, position_x__isnull=False, position_y__isnull=False)
+        if get_role(request.user) == Role.TEACHER:
+            events = events.filter(session__teacher__user=request.user)
+        for param, lookup in (('class_group', 'session__class_group'), ('subject', 'session__subject')):
+            value = request.query_params.get(param)
+            if value:
+                if not value.isdigit():
+                    raise ValidationError({param: 'Not a valid id.'})
+                events = events.filter(**{lookup: value})
+        for param, lookup in (('date_from', 'session__date__gte'), ('date_to', 'session__date__lte')):
+            value = request.query_params.get(param)
+            if value:
+                parsed = parse_date(value)
+                if parsed is None:
+                    raise ValidationError({param: 'Use YYYY-MM-DD.'})
+                events = events.filter(**{lookup: parsed})
+
+        cells = [[0] * grid for _ in range(grid)]
+        total = 0
+        for x, y in events.values_list('position_x', 'position_y'):
+            column = min(int(x * grid), grid - 1)
+            row = min(int(y * grid), grid - 1)
+            cells[row][column] += 1
+            total += 1
+        peak = max((value for line in cells for value in line), default=0)
+        return Response({'kind': kind, 'grid': grid, 'total': total, 'peak': peak, 'cells': cells})

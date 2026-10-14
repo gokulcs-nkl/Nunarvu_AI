@@ -46,6 +46,8 @@ def record_updates(session, camera, updates: list[EventUpdate], thresholds: Thre
                 session=session, camera=camera, kind=update.kind, subject=update.subject,
                 student_id=update.student_id, started_at=_aware(update.at), confidence=update.confidence,
                 summary=describe(update, thresholds), signals=list(update.signals),
+                position_x=update.position[0] if update.position else None,
+                position_y=update.position[1] if update.position else None,
             ))
         else:
             ClassroomEvent.objects.filter(

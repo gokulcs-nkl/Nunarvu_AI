@@ -17,6 +17,7 @@ router.register('students', academics.StudentViewSet)
 router.register('enrollments', academics.EnrollmentViewSet)
 router.register('periods', academics.PeriodViewSet)
 router.register('holidays', academics.HolidayViewSet)
+router.register('terms', academics.TermViewSet)
 router.register('timetable', academics.TimetableEntryViewSet)
 router.register('sessions', academics.ClassSessionViewSet)
 router.register('attendance', attendance.AttendanceRecordViewSet)
@@ -34,6 +35,8 @@ urlpatterns = [
     path('reports/attendance/', face_views.AttendanceReportView.as_view(), name='v1-attendance-report'),
     path('reports/summary/', analytics.AttendanceSummaryView.as_view(), name='v1-attendance-summary'),
     path('reports/observations/', analytics.ObservationSummaryView.as_view(), name='v1-observation-summary'),
+    path('reports/forecast/', analytics.ForecastView.as_view(), name='v1-forecast'),
+    path('reports/participation/', analytics.ParticipationHeatmapView.as_view(), name='v1-participation'),
     path('system/health/', analytics.SystemHealthView.as_view(), name='v1-system-health'),
     path('settings/observations/', monitoring.ObservationSettingsView.as_view(), name='v1-observation-settings'),
     path('cameras/<int:pk>/snapshot/', monitoring.CameraSnapshotView.as_view(), name='v1-camera-snapshot'),

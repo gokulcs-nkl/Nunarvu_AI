@@ -120,6 +120,8 @@ class ClassroomEvent(models.Model):
     confidence = models.FloatField(help_text="Model confidence in the measurements, 0-1; not a probability that the event is true")
     summary = models.CharField(max_length=255)
     signals = models.JSONField(default=list, help_text="Measurements that triggered the event, with their thresholds")
+    position_x = models.FloatField(null=True, blank=True, help_text="Centre of the person across the frame, 0 (left) to 1 (right)")
+    position_y = models.FloatField(null=True, blank=True, help_text="Centre of the person down the frame, 0 (top) to 1 (bottom)")
     review_status = models.CharField(max_length=20, choices=Review.choices, default=Review.UNREVIEWED)
     reviewed_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
     reviewed_at = models.DateTimeField(null=True, blank=True)

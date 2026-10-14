@@ -4,6 +4,7 @@ import {
   CalendarClock,
   CalendarDays,
   Eye,
+  TrendingUp,
   GraduationCap,
   LayoutDashboard,
   LogOut,
@@ -43,6 +44,7 @@ const NAV: { heading: string; items: NavItem[] }[] = [
       { to: '/students', label: 'Students', icon: Users, roles: STAFF },
       { to: '/observations', label: 'Observations', icon: Eye, roles: STAFF },
       { to: '/reports', label: 'Reports', icon: BarChart3, roles: STAFF },
+      { to: '/insights', label: 'Insights', icon: TrendingUp, roles: STAFF },
     ],
   },
   {

@@ -58,6 +58,7 @@ class EventUpdate:
     at: float
     confidence: float = 0.0
     signals: tuple = ()       # measurements that triggered the event, as dicts
+    position: tuple[float, float] | None = None  # person's centre as a fraction of the frame
 
 
 @dataclass
@@ -69,6 +70,7 @@ class _Condition:
     confidences: list = field(default_factory=list)
     signals: tuple = ()
     student_id: int | None = None
+    position: tuple[float, float] | None = None
 
 
 def _box_contains(box, point) -> bool:
@@ -82,7 +84,7 @@ class BehaviorAnalyzer:
         self._previous: dict[int, tuple[np.ndarray, float]] = {}
 
     def _observe(self, subject: str, kind: str, met: bool, now: float, confidence: float, signals: tuple,
-                 student_id: int | None, updates: list[EventUpdate]) -> None:
+                 student_id: int | None, updates: list[EventUpdate], position: tuple[float, float] | None = None) -> None:
         if kind not in self.thresholds.enabled:
             return
         state = self._conditions.setdefault((subject, kind), _Condition())
@@ -95,12 +97,15 @@ class BehaviorAnalyzer:
             state.last_true = now
             state.confidences.append(confidence)
             state.signals = signals
+            if position is not None:
+                state.position = position
             held = now - state.since
             if not state.open and held >= self.thresholds.seconds_for(kind) and now - state.ended_at >= COOLDOWN_SECONDS:
                 state.open = True
                 updates.append(EventUpdate(
                     'start', kind, subject, state.student_id, state.since,
                     float(np.mean(state.confidences)), signals + ({'signal': 'held_seconds', 'value': round(held, 1), 'threshold': self.thresholds.seconds_for(kind)},),
+                    state.position,
                 ))
         elif state.since is not None and now - state.last_true > GRACE_SECONDS:
             self._finish(subject, kind, state, updates)
@@ -111,7 +116,7 @@ class BehaviorAnalyzer:
             state.ended_at = state.last_true
         state.since, state.open = None, False
 
-    def update(self, people: list[Person], phone_boxes: list[tuple], now: float) -> list[EventUpdate]:
+    def update(self, people: list[Person], phone_boxes: list[tuple], now: float, frame_size: tuple[int, int] | None = None) -> list[EventUpdate]:
         """
         Feed one sample. `phone_boxes` are (x1, y1, x2, y2, score) detections of phone-like objects.
         Returns the events that started or ended at this sample.
@@ -123,20 +128,26 @@ class BehaviorAnalyzer:
         for person in people:
             subject = str(person.track_id)
             seen.add(subject)
+            where = None
+            if frame_size and frame_size[0] and frame_size[1]:
+                where = (
+                    round(min(max((person.box[0] + person.box[2]) / 2 / frame_size[0], 0.0), 1.0), 4),
+                    round(min(max((person.box[1] + person.box[3]) / 2 / frame_size[1], 0.0), 1.0), 4),
+                )
 
             raised = rules.hand_raise(person.keypoints, person.confidence)
             if raised is not None:
-                self._observe(subject, HAND_RAISE, raised.met, now, raised.confidence, (raised.as_dict(),), person.student_id, updates)
+                self._observe(subject, HAND_RAISE, raised.met, now, raised.confidence, (raised.as_dict(),), person.student_id, updates, where)
 
             lowered = rules.head_down(person.keypoints, person.confidence)
             if lowered is not None:
-                self._observe(subject, HEAD_DOWN, lowered.met, now, lowered.confidence, (lowered.as_dict(),), person.student_id, updates)
+                self._observe(subject, HEAD_DOWN, lowered.met, now, lowered.confidence, (lowered.as_dict(),), person.student_id, updates, where)
 
             near = [box for box in phone_boxes if _box_contains(person.box, ((box[0] + box[2]) / 2, (box[1] + box[3]) / 2))]
             score = max((box[4] for box in near), default=0.0)
             self._observe(
                 subject, PHONE, bool(near), now, score,
-                ({'signal': 'phone_like_object_score', 'value': round(score, 2), 'threshold': 0.0},), person.student_id, updates,
+                ({'signal': 'phone_like_object_score', 'value': round(score, 2), 'threshold': 0.0},), person.student_id, updates, where,
             )
 
             previous = self._previous.get(person.track_id)

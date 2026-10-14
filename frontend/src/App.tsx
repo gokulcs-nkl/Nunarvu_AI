@@ -4,6 +4,7 @@ import { Layout } from './components/Layout'
 import { EmptyState, Spinner } from './components/ui'
 import { useAuth } from './lib/auth'
 import { Cameras } from './pages/Cameras'
+import { Forecast } from './pages/Forecast'
 import { Health } from './pages/Health'
 import { Landing } from './pages/Landing'
 import { Login } from './pages/Login'
@@ -59,6 +60,7 @@ export default function App() {
           <Route path="students" element={<Students />} />
           <Route path="observations" element={<Observations />} />
           <Route path="reports" element={<Reports />} />
+          <Route path="insights" element={<Forecast />} />
           <Route path="cameras" element={<Cameras />} />
           <Route path="setup" element={<Setup />} />
           <Route path="timetable" element={<Timetable />} />

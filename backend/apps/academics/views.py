@@ -11,9 +11,11 @@ from apps.accounts.models import Role, get_role
 from apps.accounts.permissions import ADMIN_ONLY, STAFF_ROLES, RolePermission
 
 from .models import (
+    Term,
     ClassGroup, ClassSession, Enrollment, Holiday, Period, Room, Student, Subject, Teacher, TimetableEntry,
 )
 from .serializers import (
+    TermSerializer,
     ClassGroupSerializer, ClassSessionSerializer, EnrollmentSerializer, HolidaySerializer, PeriodSerializer,
     RoomSerializer, StudentSerializer, SubjectSerializer, TeacherSerializer, TimetableEntrySerializer,
 )
@@ -141,6 +143,14 @@ class HolidayViewSet(viewsets.ModelViewSet):
     queryset = Holiday.objects.all()
     serializer_class = HolidaySerializer
     permission_classes = [RolePermission]
+
+
+class TermViewSet(AuditedModelViewSetMixin, viewsets.ModelViewSet):
+    queryset = Term.objects.all()
+    serializer_class = TermSerializer
+    permission_classes = [RolePermission]
+    read_roles = STAFF_ROLES
+    write_roles = ADMIN_ONLY
 
 
 class TimetableEntryViewSet(viewsets.ModelViewSet):

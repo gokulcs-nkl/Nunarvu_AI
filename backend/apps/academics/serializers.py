@@ -4,6 +4,7 @@ from rest_framework import serializers
 from rest_framework.validators import UniqueTogetherValidator
 
 from .models import (
+    Term,
     ClassGroup, ClassSession, Enrollment, Holiday, Period, Room, Student, Subject, Teacher, TimetableEntry,
 )
 
@@ -121,6 +122,19 @@ class HolidaySerializer(serializers.ModelSerializer):
     class Meta:
         model = Holiday
         fields = ['id', 'date', 'name']
+
+
+class TermSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Term
+        fields = ['id', 'name', 'start_date', 'end_date', 'minimum_attendance']
+
+    def validate(self, attrs):
+        instance = Term(**{**{'name': '', 'start_date': None, 'end_date': None, 'minimum_attendance': 75}, **attrs})
+        if self.instance:
+            instance.pk = self.instance.pk
+        instance.clean()
+        return attrs
 
 
 class TimetableEntrySerializer(serializers.ModelSerializer):

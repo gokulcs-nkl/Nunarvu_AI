@@ -17,6 +17,7 @@ teacher-reviewed classroom observations, built with Django and React.
 | 6 | Timetable screen with automatic session start and end, user management, system health and in-app alerts | Done |
 | 7 | Evaluation, benchmark and backup tools; PostgreSQL compose file; demonstration and evaluation guides | Tools done; measurements not yet run; PostgreSQL untested |
 | + | Dark interface with depth; GPU support for the face models; email alerts for camera problems | Done |
+| + | Attendance shortage forecast and participation heatmap (terms, at-risk students, where in the room participation happens) | Done, not yet evaluated |
 
 Recognition accuracy has not been evaluated yet; the match thresholds are
 starting values. See `docs/EVALUATION.md` for how to measure it and

@@ -224,3 +224,36 @@ class ClassSession(models.Model):
     def __str__(self):
         slot = f"P{self.period_number}" if self.period_number else f"{self.starts_at:%H:%M}"
         return f"{self.class_group} {self.subject.code} {self.date} {slot}"
+
+
+class Term(models.Model):
+    """A teaching term. The attendance forecast counts the classes left until its end."""
+    name = models.CharField(max_length=100)
+    start_date = models.DateField()
+    end_date = models.DateField()
+    minimum_attendance = models.PositiveSmallIntegerField(
+        default=75, help_text="Percentage a student must keep in each subject",
+    )
+
+    class Meta:
+        ordering = ['-start_date']
+
+    def __str__(self):
+        return self.name
+
+    def clean(self):
+        if self.start_date and self.end_date and self.end_date <= self.start_date:
+            raise ValidationError({'end_date': 'The term must end after it starts.'})
+        if not 1 <= (self.minimum_attendance or 0) <= 100:
+            raise ValidationError({'minimum_attendance': 'Use a percentage from 1 to 100.'})
+        if self.start_date and self.end_date:
+            overlap = Term.objects.exclude(pk=self.pk).filter(start_date__lte=self.end_date, end_date__gte=self.start_date)
+            if overlap.exists():
+                raise ValidationError(f'Overlaps with {overlap.first()}.')
+
+    @classmethod
+    def current(cls, day=None):
+        from django.utils import timezone
+
+        day = day or timezone.localdate()
+        return cls.objects.filter(start_date__lte=day, end_date__gte=day).first()

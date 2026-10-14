@@ -272,7 +272,7 @@ class CameraWorker:
                 f'{min(heads):.2f}' if heads else 'not measurable', len(phone_boxes),
             )
 
-        updates = self.analyzer.update(people, phone_boxes, now)
+        updates = self.analyzer.update(people, phone_boxes, now, (frame.shape[1], frame.shape[0]))
         return observations.record_updates(self.session, self.camera, updates, thresholds) if updates else []
 
     # ----- status ---------------------------------------------------------

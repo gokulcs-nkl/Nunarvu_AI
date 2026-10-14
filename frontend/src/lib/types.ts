@@ -256,3 +256,44 @@ export interface SystemHealth {
   students: { active: number; with_consent: number; enrolled_faces: number }
   models: { face: string; pose: string; objects: string }
 }
+
+export interface Term {
+  id: number
+  name: string
+  start_date: string
+  end_date: string
+  minimum_attendance: number
+}
+
+export interface ForecastRow {
+  student: number
+  roll_number: string
+  full_name: string
+  class_group: number
+  subject: number
+  subject_code: string
+  attended: number
+  held: number
+  percent: number | null
+  remaining: number
+  must_attend: number
+  can_miss: number
+  best_possible: number | null
+  status: 'safe' | 'at_risk' | 'cannot_reach' | 'no_classes'
+}
+
+export interface ForecastResult {
+  term: { id: number; name: string; start_date: string; end_date: string; minimum_attendance: number } | null
+  detail?: string
+  as_of?: string
+  counts?: { at_risk: number; cannot_reach: number; total: number }
+  rows?: ForecastRow[]
+}
+
+export interface Heatmap {
+  kind: string
+  grid: number
+  total: number
+  peak: number
+  cells: number[][]
+}
