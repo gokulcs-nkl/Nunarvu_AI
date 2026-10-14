@@ -16,6 +16,7 @@ teacher-reviewed classroom observations, built with Django and React.
 | 5 | Analytics: attendance by date, class, subject and student; observation counts; PDF and CSV export | Done |
 | 6 | Timetable screen with automatic session start and end, user management, system health and in-app alerts | Done |
 | 7 | Evaluation, benchmark and backup tools; PostgreSQL compose file; demonstration and evaluation guides | Tools done; measurements not yet run; PostgreSQL untested |
+| + | Dark interface with depth; GPU support for the face models; email alerts for camera problems | Done |
 
 Recognition accuracy has not been evaluated yet; the match thresholds are
 starting values. See `docs/EVALUATION.md` for how to measure it and
@@ -170,6 +171,28 @@ python manage.py backup_data --out backups               # compressed backup; re
 three windows. To use a particular Python (for example a virtual environment
 with GPU packages), put its full path in a file named `python_path.txt` next to
 the script.
+
+## Graphics card
+
+With an NVIDIA card, install the GPU packages into the Python environment that runs the app:
+
+```bash
+pip install torch==2.2.2 torchvision==0.17.2 --index-url https://download.pytorch.org/whl/cu121
+pip uninstall -y onnxruntime
+pip install "onnxruntime-gpu[cuda,cudnn]==1.23.2"
+```
+
+The app loads the CUDA libraries at start-up. `python manage.py benchmark_models` shows
+whether each model is on the graphics card. Each program that uses the card reserves several
+GB of system memory; set `BEHAVIOR_DEVICE=cpu` in `backend/.env` to keep the pose and object
+models on the processor if memory is short.
+
+## Email alerts
+
+When a camera stops working, and when it recovers, administrators and teachers who have an
+email address are told, unless they switch it off on the System health page. By default the
+message is printed in the camera worker window; set the `EMAIL_*` values in `backend/.env`
+to send real email.
 
 ## PostgreSQL
 

@@ -255,7 +255,7 @@ const PRINCIPLES = [
 
 const ROADMAP = [
   ['Measured accuracy', 'Recognition and observation accuracy measured on recorded, consented sessions, and published with the project.'],
-  ['Notifications', 'Email or message alerts when a camera drops or attendance needs attention. Today these appear only inside the app.'],
+  ['Packaged deployment', 'One-command setup with PostgreSQL and backups. The pieces exist but have not been tested together.'],
   ['Whole-room cameras', 'Guidance and testing for high-resolution cameras that cover a full classroom, not only the front rows.'],
 ]
 

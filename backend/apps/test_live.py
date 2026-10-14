@@ -390,3 +390,49 @@ class ConsumerTests(TransactionTestCase):
         self.assertEqual(await communicator.receive_json_from(), {'faces': ['mine']})
         self.assertTrue(await communicator.receive_nothing())
         await communicator.disconnect()
+
+
+class NotificationTests(FaceBase):
+    def setUp(self):
+        super().setUp()
+        from django.core import mail
+
+        self.mail = mail
+        self.camera = Camera.objects.get(name='Laptop webcam')
+        User.objects.filter(pk=self.admin.pk).update(email='admin@example.com')
+        User.objects.filter(pk=self.teacher_user.pk).update(email='teacher@example.com')
+        User.objects.filter(pk=self.viewer.pk).update(email='viewer@example.com')
+        self.worker = CameraWorker(self.camera, FakeEngine([ASHA]), RecordingPublisher(), grabber=mock.Mock())
+
+    def test_error_and_recovery_are_emailed_to_staff_only(self):
+        self.worker._set_status(Camera.Status.ONLINE)
+        self.assertEqual(len(self.mail.outbox), 0)  # starting up is not news
+
+        self.worker._set_status(Camera.Status.ERROR, 'The camera stopped sending frames.')
+        self.assertEqual(len(self.mail.outbox), 1)
+        problem = self.mail.outbox[0]
+        self.assertEqual(problem.subject, 'Camera problem: Laptop webcam')
+        self.assertIn('stopped sending frames', problem.body)
+        self.assertEqual(sorted(problem.to), ['admin@example.com', 'teacher@example.com'])
+
+        self.worker._set_status(Camera.Status.ONLINE)
+        self.assertEqual(self.mail.outbox[1].subject, 'Camera working again: Laptop webcam')
+
+    def test_a_flapping_camera_does_not_send_a_stream_of_emails(self):
+        for _ in range(3):
+            self.worker._set_status(Camera.Status.ERROR, 'x')
+            self.worker._set_status(Camera.Status.ONLINE)
+        problems = [message for message in self.mail.outbox if message.subject.startswith('Camera problem')]
+        self.assertEqual(len(problems), 1)
+
+    def test_people_who_switched_alerts_off_are_not_emailed(self):
+        from apps.accounts.models import NotificationPreference
+
+        NotificationPreference.objects.create(user=self.admin, camera_offline=False)
+        self.worker._set_status(Camera.Status.ERROR, 'x')
+        self.assertEqual(self.mail.outbox[0].to, ['teacher@example.com'])
+
+    def test_a_failing_mail_server_does_not_stop_the_worker(self):
+        with mock.patch('apps.monitoring.notifications.send_mail', side_effect=OSError('connection refused')):
+            self.worker._set_status(Camera.Status.ERROR, 'x')
+        self.assertEqual(Camera.objects.get(pk=self.camera.pk).status, 'error')

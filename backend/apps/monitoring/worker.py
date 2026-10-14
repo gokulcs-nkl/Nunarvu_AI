@@ -25,7 +25,7 @@ from vision.behavior import rules
 from vision.behavior.analyzer import BehaviorAnalyzer, Person
 from vision.face.tracker import FaceTracker
 
-from . import observations
+from . import notifications, observations
 from .models import Camera, CameraStatusLog
 
 logger = logging.getLogger(__name__)
@@ -288,6 +288,7 @@ class CameraWorker:
         if status != self._status:
             CameraStatusLog.objects.create(camera=self.camera, status=status, detail=error[:255])
             logger.info('Camera %s is %s %s', self.camera.name, status, error)
+            notifications.camera_status_changed(self.camera, status, self._status, error)
             self._status = status
 
     def _error_payload(self, error: str, now: float) -> dict:

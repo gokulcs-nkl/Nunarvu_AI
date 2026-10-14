@@ -1,8 +1,9 @@
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { Link } from 'react-router-dom'
 
 import { Alert, Badge, Card, EmptyState, PageHeader, Spinner } from '../components/ui'
 import { api } from '../lib/api'
+import { useAuth } from '../lib/auth'
 import type { SystemHealth } from '../lib/types'
 
 const STATUS_TONE = { online: 'ok', offline: 'neutral', error: 'danger' } as const
@@ -45,6 +46,50 @@ function Stat({ label, value, to }: { label: string; value: number; to?: string 
     </Link>
   ) : (
     <div className={className}>{body}</div>
+  )
+}
+
+interface NotificationPreferences {
+  camera_offline: boolean
+}
+
+/** The signed-in person's own choice about camera-problem emails. */
+function NotificationCard() {
+  const { user } = useAuth()
+  const queryClient = useQueryClient()
+  const preferences = useQuery({ queryKey: ['my-notifications'], queryFn: () => api<NotificationPreferences>('/me/notifications/') })
+  const save = useMutation({
+    mutationFn: (camera_offline: boolean) => api<NotificationPreferences>('/me/notifications/', { method: 'PUT', body: { camera_offline } }),
+    onSuccess: (saved) => queryClient.setQueryData(['my-notifications'], saved),
+  })
+  if (!preferences.data) return null
+
+  return (
+    <Card title="Email alerts">
+      <label className="flex items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          className="mt-1"
+          checked={preferences.data.camera_offline}
+          disabled={save.isPending}
+          onChange={(event) => save.mutate(event.target.checked)}
+        />
+        <span>
+          <span className="font-medium">Email me when a camera stops working, and when it recovers</span>
+          <span className="block text-muted">
+            {user?.email
+              ? `Sent to ${user.email}.`
+              : 'Your account has no email address, so nothing can be sent. An administrator can add one on the Users page.'}{' '}
+            Unless a mail server is configured, alerts are printed in the camera worker window instead of being sent.
+          </span>
+        </span>
+      </label>
+      {save.isError && (
+        <div className="mt-3">
+          <Alert>Could not save your choice.</Alert>
+        </div>
+      )}
+    </Card>
   )
 }
 
@@ -112,6 +157,8 @@ export function Health() {
             )}
             <p className="mt-3 text-xs text-muted">Uptime is the share of the period in which the camera worker reported the camera as online.</p>
           </Card>
+
+          <NotificationCard />
 
           <Card title="Models in use">
             <dl className="grid gap-3 text-sm sm:grid-cols-3">

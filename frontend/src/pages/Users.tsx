@@ -26,13 +26,14 @@ function UserForm({ account, onDone }: { account: User | null; onDone: () => voi
   const [username, setUsername] = useState(account?.username ?? '')
   const [firstName, setFirstName] = useState(account?.first_name ?? '')
   const [lastName, setLastName] = useState(account?.last_name ?? '')
+  const [email, setEmail] = useState(account?.email ?? '')
   const [role, setRole] = useState<Role>(account?.role ?? 'teacher')
   const [active, setActive] = useState(account?.is_active ?? true)
   const [password, setPassword] = useState('')
 
   const save = useMutation({
     mutationFn: () => {
-      const body: Record<string, unknown> = { username, first_name: firstName, last_name: lastName, role, is_active: active }
+      const body: Record<string, unknown> = { username, first_name: firstName, last_name: lastName, email, role, is_active: active }
       if (password) body.password = password
       return account
         ? api<User>(`/users/${account.id}/`, { method: 'PATCH', body })
@@ -91,6 +92,13 @@ function UserForm({ account, onDone }: { account: User | null; onDone: () => voi
             Last name
           </label>
           <Input id="user-last" value={lastName} onChange={(event) => setLastName(event.target.value)} />
+        </div>
+        <div className="sm:col-span-2">
+          <label htmlFor="user-email" className="mb-1 block text-sm font-medium">
+            Email (optional)
+          </label>
+          <Input id="user-email" type="email" className="max-w-sm" value={email} onChange={(event) => setEmail(event.target.value)} />
+          <p className="mt-1 text-xs text-muted">Used only to send camera-problem alerts to administrators and teachers.</p>
         </div>
         <div className="sm:col-span-2">
           <label htmlFor="user-role" className="mb-1 block text-sm font-medium">

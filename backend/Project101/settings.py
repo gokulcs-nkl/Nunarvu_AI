@@ -331,3 +331,18 @@ BEHAVIOR_OBJECT_MODEL = BASE_DIR / get_env_variable('BEHAVIOR_OBJECT_MODEL', 'mo
 BEHAVIOR_DEVICE = get_env_variable('BEHAVIOR_DEVICE', 'auto')
 WORKER_BEHAVIOR_FPS = float(get_env_variable('WORKER_BEHAVIOR_FPS', '2'))
 WORKER_PHONE_FPS = float(get_env_variable('WORKER_PHONE_FPS', '1'))
+
+# ---------------------------------------------------------------------------
+# Email notifications (camera problems)
+# ---------------------------------------------------------------------------
+# By default messages are printed in the camera worker's window instead of being sent.
+# To send real email, set EMAIL_BACKEND=django.core.mail.backends.smtp.EmailBackend and the
+# EMAIL_HOST values for your mail provider.
+EMAIL_BACKEND = get_env_variable('EMAIL_BACKEND', 'django.core.mail.backends.console.EmailBackend')
+EMAIL_HOST = get_env_variable('EMAIL_HOST', 'localhost')
+EMAIL_PORT = int(get_env_variable('EMAIL_PORT', '587'))
+EMAIL_HOST_USER = get_env_variable('EMAIL_HOST_USER', '')
+EMAIL_HOST_PASSWORD = get_env_variable('EMAIL_HOST_PASSWORD', '')
+EMAIL_USE_TLS = get_env_variable('EMAIL_USE_TLS', 'True').lower() in ('true', '1', 'yes')
+EMAIL_TIMEOUT = 10
+DEFAULT_FROM_EMAIL = get_env_variable('DEFAULT_FROM_EMAIL', 'Nunarvu AI <no-reply@localhost>')
