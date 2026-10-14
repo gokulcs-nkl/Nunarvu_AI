@@ -89,6 +89,7 @@ export interface PrivacySettings {
   attendance_retention_days: number
   event_retention_days: number
   blur_unconsented: boolean
+  guardian_notices_enabled: boolean
 }
 
 export interface Compliance {
@@ -328,4 +329,41 @@ export interface Heatmap {
   total: number
   peak: number
   cells: number[][]
+}
+
+export interface RiskSignal {
+  name: string
+  detail: string
+  points: number
+}
+
+export interface RiskRow {
+  student: number
+  roll_number: string
+  full_name: string
+  class_group: number | null
+  percent: number | null
+  attended: number
+  held: number
+  consecutive_absences: number
+  subjects_at_risk: number
+  score: number
+  band: 'low' | 'medium' | 'high'
+  signals: RiskSignal[]
+  guardian_contact: string
+}
+
+export interface RiskResult {
+  term: { id: number; name: string; minimum_attendance: number } | null
+  detail?: string
+  counts?: { high: number; medium: number; total: number }
+  rows: RiskRow[]
+}
+
+export interface GuardianNotices {
+  term: { id: number; name: string } | null
+  detail?: string
+  enabled?: boolean
+  pending: { student: number; roll_number: string; full_name: string; to: string; score: number; percent: number | null }[]
+  sent: { id: number; roll_number: string; to: string; subject: string; sent_at: string; attendance_percent: number | null }[]
 }

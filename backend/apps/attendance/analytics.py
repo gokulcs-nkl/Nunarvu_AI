@@ -15,7 +15,7 @@ from rest_framework.views import APIView
 from apps.academics.models import ClassGroup, Student, Subject
 from apps.accounts.audit import record
 from apps.accounts.models import Role, get_role
-from apps.accounts.permissions import STAFF_ROLES, RolePermission
+from apps.accounts.permissions import ADMIN_ONLY, STAFF_ROLES, RolePermission
 from apps.monitoring.models import Camera, CameraStatusLog, ClassroomEvent
 
 from .models import AttendanceRecord
@@ -395,3 +395,108 @@ class ParticipationHeatmapView(APIView):
             total += 1
         peak = max((value for line in cells for value in line), default=0)
         return Response({'kind': kind, 'grid': grid, 'total': total, 'peak': peak, 'cells': cells})
+
+
+class RiskView(APIView):
+    """
+    Early warning list: students whose attendance pattern suggests they may be disengaging,
+    with the reasons that produced each score. Query: term, class_group, band (low|medium|high).
+    Teachers see only their own classes.
+    """
+    permission_classes = [RolePermission]
+    read_roles = STAFF_ROLES
+
+    def get(self, request):
+        from datetime import date as date_type
+
+        from apps.academics.models import Term
+
+        from .risk import as_dicts, assess
+
+        term_id = request.query_params.get('term')
+        term = Term.objects.filter(pk=term_id).first() if (term_id or '').isdigit() else Term.current()
+        if term is None:
+            return Response({'term': None, 'detail': 'No term covers today. Create a term to see early warnings.', 'rows': []})
+
+        today = date_type.today()
+        if request.query_params.get('as_of'):
+            parsed = parse_date(request.query_params['as_of'])
+            if parsed is None:
+                raise ValidationError({'as_of': 'Use YYYY-MM-DD.'})
+            today = parsed
+
+        groups = request.query_params.get('class_group')
+        class_group_ids = [int(part) for part in groups.split(',') if part.strip().isdigit()] if groups else None
+        teacher_user = request.user if get_role(request.user) == Role.TEACHER else None
+        rows = assess(term, today, class_group_ids=class_group_ids, teacher_user=teacher_user)
+
+        band = request.query_params.get('band')
+        if band:
+            rows = [row for row in rows if row.band == band]
+        return Response({
+            'term': {'id': term.id, 'name': term.name, 'minimum_attendance': term.minimum_attendance},
+            'as_of': today,
+            'counts': {
+                'high': sum(1 for row in rows if row.band == 'high'),
+                'medium': sum(1 for row in rows if row.band == 'medium'),
+                'total': len(rows),
+            },
+            'rows': as_dicts(rows),
+        })
+
+
+class GuardianNoticeView(APIView):
+    """
+    Notices to guardians about attendance. GET previews who would be told and lists what was
+    already sent; POST sends them. Administrators only for sending.
+    """
+    permission_classes = [RolePermission]
+    read_roles = STAFF_ROLES
+    write_roles = ADMIN_ONLY
+
+    def _term(self, request):
+        from apps.academics.models import Term
+
+        term_id = request.query_params.get('term') or request.data.get('term')
+        if term_id and str(term_id).isdigit():
+            return Term.objects.filter(pk=term_id).first()
+        return Term.current()
+
+    def get(self, request):
+        from apps.academics.models import PrivacySettings
+
+        from .models import GuardianNotice
+        from .notices import pending_notices
+
+        term = self._term(request)
+        if term is None:
+            return Response({'term': None, 'detail': 'No term covers today.', 'pending': [], 'sent': []})
+        teacher_user = request.user if get_role(request.user) == Role.TEACHER else None
+        pending = pending_notices(term, teacher_user=teacher_user)
+        sent = GuardianNotice.objects.filter(term=term).select_related('student')[:50]
+        return Response({
+            'term': {'id': term.id, 'name': term.name},
+            'enabled': PrivacySettings.load().guardian_notices_enabled,
+            'pending': [
+                {'student': row.student, 'roll_number': row.roll_number, 'full_name': row.full_name,
+                 'to': row.guardian_contact, 'score': row.score, 'percent': row.percent}
+                for row in pending
+            ],
+            'sent': [
+                {'id': notice.id, 'roll_number': notice.student.roll_number, 'to': notice.sent_to,
+                 'subject': notice.subject, 'sent_at': notice.sent_at, 'attendance_percent': notice.attendance_percent}
+                for notice in sent
+            ],
+        })
+
+    def post(self, request):
+        from .notices import send_notices
+
+        term = self._term(request)
+        if term is None:
+            raise ValidationError({'term': 'No term covers today.'})
+        dry_run = bool(request.data.get('dry_run'))
+        result = send_notices(term, sent_by=request.user, dry_run=dry_run)
+        if not dry_run:
+            record(request, 'send_guardian_notices', request.user, {'term': term.name, 'sent': result['sent'], 'failed': result['failed']})
+        return Response(result)

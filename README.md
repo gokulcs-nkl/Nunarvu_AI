@@ -19,6 +19,7 @@ teacher-reviewed classroom observations, built with Django and React.
 | + | Dark interface with depth; GPU support for the face models; email alerts for camera problems | Done |
 | + | Attendance shortage forecast and participation heatmap (terms, at-risk students, where in the room participation happens) | Done, not yet evaluated |
 | + | Privacy and compliance centre (DPDP Act 2023): consent history with withdrawal, data export and erasure, retention limits with clean-up, compliance dashboard | Done |
+| + | Early warning score and guardian notices: explainable attendance risk signals per student, and email to a guardian when attendance slips | Done, not yet evaluated |
 
 Recognition accuracy has not been evaluated yet; the match thresholds are
 starting values. See `docs/EVALUATION.md` for how to measure it and
@@ -167,6 +168,8 @@ miss cases and raise false alarms.
 python manage.py evaluate_faces <folder> --csv out.csv   # recognition error rates on your own labelled photos
 python manage.py benchmark_models --image photo.jpg      # time per frame for each model on this computer
 python manage.py backup_data --out backups               # compressed backup; restore with loaddata
+python manage.py apply_retention                         # delete data past its retention period
+python manage.py send_guardian_notices --dry-run         # who would be emailed about attendance
 ```
 
 `start_nunarvu.bat` starts the backend, the camera worker and the web app in

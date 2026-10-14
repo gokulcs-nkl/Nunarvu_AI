@@ -211,7 +211,10 @@ class ConsentRecordSerializer(serializers.ModelSerializer):
 class PrivacySettingsSerializer(serializers.ModelSerializer):
     class Meta:
         model = PrivacySettings
-        fields = ['face_retention_days', 'attendance_retention_days', 'event_retention_days', 'blur_unconsented', 'updated_at']
+        fields = [
+            'face_retention_days', 'attendance_retention_days', 'event_retention_days',
+            'blur_unconsented', 'guardian_notices_enabled', 'updated_at',
+        ]
 
     def validate(self, attrs):
         for field, value in attrs.items():

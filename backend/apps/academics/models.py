@@ -302,6 +302,10 @@ class PrivacySettings(models.Model):
     blur_unconsented = models.BooleanField(
         default=True, help_text="Hide the faces of people who are not enrolled with consent in the live view and snapshots",
     )
+    guardian_notices_enabled = models.BooleanField(
+        default=False,
+        help_text="Email a guardian when a student's attendance gives an early warning. Off until guardian contacts are checked.",
+    )
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

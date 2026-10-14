@@ -3,6 +3,7 @@ import { AlertTriangle, CircleCheck, TriangleAlert } from 'lucide-react'
 import { useState } from 'react'
 
 import { Heatmap } from '../components/Heatmap'
+import { RiskSection } from '../components/RiskSection'
 import { Alert, Badge, Card, EmptyState, IconTile, PageHeader, Spinner } from '../components/ui'
 import { api, apiList } from '../lib/api'
 import type { ClassGroup, ForecastResult, Heatmap as HeatmapData } from '../lib/types'
@@ -219,6 +220,7 @@ export function Forecast() {
         </span>
       </div>
       <div className="space-y-6">
+        <RiskSection />
         <ForecastSection />
         <ParticipationSection />
       </div>

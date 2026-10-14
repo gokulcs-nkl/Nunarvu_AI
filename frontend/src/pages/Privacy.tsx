@@ -113,6 +113,20 @@ function RetentionForm({ settings, editable }: { settings: PrivacySettings; edit
         ))}
         <li className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
           <span className="min-w-0">
+            <span className="font-medium">Email guardians about attendance</span>
+            <span className="block text-muted">
+              Send a guardian an early warning when a student's attendance slips. Check guardian contacts first.
+            </span>
+          </span>
+          <input
+            type="checkbox"
+            checked={current.guardian_notices_enabled}
+            disabled={!editable}
+            onChange={(e) => setDraft({ ...draft, guardian_notices_enabled: e.target.checked })}
+          />
+        </li>
+        <li className="flex flex-wrap items-center justify-between gap-3 py-3 text-sm">
+          <span className="min-w-0">
             <span className="font-medium">Hide faces without consent</span>
             <span className="block text-muted">Blur people who are not enrolled with consent in the live view and snapshots.</span>
           </span>
