@@ -11,6 +11,18 @@ import numpy as np
 
 RECONNECT_DELAYS = (1, 2, 4, 8, 15, 30)  # seconds; the last value repeats
 
+# Windows gives a second program a black picture when the webcam is already in use, and a
+# closed privacy cover looks the same. Both arrive as valid frames, so they are checked for.
+BLACK_PIXEL_LEVEL = 8        # no pixel brighter than this (of 255) means the picture is black
+BLACK_REPORT_SECONDS = 2.0   # black for this long: stop treating the camera as working
+BLACK_REOPEN_SECONDS = 15.0  # black for this long: close the camera and open it again
+BLACK_MESSAGE = 'The camera is sending a black picture. Another program may be using it, or its cover may be closed.'
+
+
+def is_black(frame: np.ndarray) -> bool:
+    """True when a sparse sample of the frame has no pixel above near-black."""
+    return int(frame[::16, ::16].max()) <= BLACK_PIXEL_LEVEL
+
 
 def open_capture(source_type: str, source: str):
     """Open an OpenCV capture for a camera record's source."""
@@ -33,11 +45,13 @@ class FrameGrabber:
         source: str,
         opener: Callable[[str, str], object] = open_capture,
         sleep: Callable[[float], None] = time.sleep,
+        clock: Callable[[], float] = time.time,
     ):
         self.source_type = source_type
         self.source = source
         self._opener = opener
         self._sleep = sleep
+        self._clock = clock
         self._lock = threading.Lock()
         self._frame: np.ndarray | None = None
         self._frame_time = 0.0
@@ -80,6 +94,7 @@ class FrameGrabber:
                     fps = capture.get(cv2.CAP_PROP_FPS) or 25.0
                     frame_delay = 1.0 / fps  # play a recording at its own speed
                 failures = 0
+                black_since = None
                 while not self._stop.is_set():
                     ok, frame = capture.read()
                     if not ok or frame is None:
@@ -95,6 +110,16 @@ class FrameGrabber:
                         self._sleep(0.05)
                         continue
                     failures = 0
+                    if self.source_type != 'file' and is_black(frame):
+                        now = self._clock()
+                        black_since = black_since if black_since is not None else now
+                        if now - black_since >= BLACK_REOPEN_SECONDS:
+                            raise ConnectionError(BLACK_MESSAGE)
+                        if now - black_since >= BLACK_REPORT_SECONDS:
+                            self._fail(BLACK_MESSAGE)
+                        self._sleep(0.05)
+                        continue
+                    black_since = None
                     attempt = 0
                     self.connected = True
                     self.last_error = ''

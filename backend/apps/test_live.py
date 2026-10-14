@@ -26,7 +26,7 @@ from vision.face.tracker import FaceTracker, iou
 User = get_user_model()
 TEST_KEY = Fernet.generate_key().decode()
 TOKEN = 'worker-test-token'
-FRAME = np.zeros((480, 640, 3), dtype=np.uint8)
+FRAME = np.full((480, 640, 3), 60, dtype=np.uint8)
 
 
 class TrackerTests(SimpleTestCase):
@@ -111,6 +111,46 @@ class FrameGrabberTests(SimpleTestCase):
             self.assertFalse(grabber.connected)
             self.assertIn('could not be opened', grabber.last_error)
             self.assertIsNone(grabber.latest()[0])
+        finally:
+            grabber.stop()
+
+
+class BlackFrameTests(SimpleTestCase):
+    def test_black_picture_is_reported_as_a_camera_problem_and_recovers(self):
+        from vision.capture import BLACK_MESSAGE, is_black
+
+        self.assertTrue(is_black(np.zeros((480, 640, 3), dtype=np.uint8)))
+        self.assertFalse(is_black(np.full((480, 640, 3), 40, dtype=np.uint8)))
+
+        class Capture(FakeCapture):
+            picture = np.zeros((480, 640, 3), dtype=np.uint8)
+
+            def read(self):
+                return True, self.picture
+
+        capture = Capture()
+        ticks = iter(range(10_000))
+        grabber = FrameGrabber(
+            'webcam', '0', opener=lambda *_: capture, sleep=lambda seconds: time.sleep(0.001),
+            clock=lambda: next(ticks) * 0.5,  # each read advances the clock by half a second
+        )
+        grabber.start()
+        try:
+            deadline = time.time() + 5
+            while time.time() < deadline and grabber.reconnects == 0:
+                time.sleep(0.01)
+            self.assertFalse(grabber.connected)
+            self.assertEqual(grabber.last_error, BLACK_MESSAGE)
+            self.assertIsNone(grabber.latest()[0])
+            self.assertGreaterEqual(grabber.reconnects, 1)  # the camera was closed and opened again
+
+            Capture.picture = np.full((480, 640, 3), 90, dtype=np.uint8)  # the other program lets go
+            deadline = time.time() + 5
+            while time.time() < deadline and not grabber.connected:
+                time.sleep(0.01)
+            self.assertTrue(grabber.connected)
+            self.assertEqual(grabber.last_error, '')
+            self.assertIsNotNone(grabber.latest()[0])
         finally:
             grabber.stop()
 
